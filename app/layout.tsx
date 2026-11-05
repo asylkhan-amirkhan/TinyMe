@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { createElement, type ReactNode } from "react";
 import { EntryTransition } from "@/features/intro/entry-transition";
 import { Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
