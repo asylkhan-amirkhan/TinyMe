@@ -1,0 +1,122 @@
+/* Cozy motion: presentation only, independent of timers and application state. */
+:root {
+
+
+
+
+
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Distinct names replay on navigation without keys, remounts or event delays.
+     Opacity only: never transform an ancestor of the expanded room dialog. */
+  .page-content {
+    animation-duration: var(--duration-page);
+    animation-timing-function: var(--ease-page);
+    animation-fill-mode: backwards;
+  }
+  [data-view=room] .page-content { animation-name: view-room-in; }
+  [data-view=shop] .page-content { animation-name: view-shop-in; }
+  [data-view=inventory] .page-content { animation-name: view-inventory-in; }
+  [data-view=music] .page-content { animation-name: view-music-in; }
+  [data-view=stats] .page-content { animation-name: view-stats-in; }
+  [data-view=settings] .page-content { animation-name: view-settings-in; }
+  [data-view=profile] .page-content { animation-name: view-profile-in; }
+  /* Keep navigation one continuous reveal, without a second
+     heading animation or remounting the persistent room and audio player. */
+  .page-content .page-heading { animation: none; }
+  .immersive[data-view=room] .immersive-room {
+    animation: view-room-in var(--duration-page) var(--ease-page) backwards;
+  }
+
+  .app-shell button,
+  .app-shell select,
+  .app-shell input:not([type=range]),
+  .playlist-link {
+    transition:
+      background-color var(--duration-control) var(--ease-cozy),
+      border-color var(--duration-control) var(--ease-cozy),
+      color var(--duration-control) var(--ease-cozy),
+      box-shadow var(--duration-surface) var(--ease-cozy),
+      translate var(--duration-control) var(--ease-cozy),
+      scale var(--duration-control) var(--ease-cozy);
+  }
+  .app-shell button:active:not(:disabled) {
+    scale: .97;
+    translate: 0 0;
+    transition-duration: var(--duration-fast);
+  }
+  .app-shell button:disabled { scale: 1; translate: none; }
+
+  .product-card, .stat-grid > div, .playlist-panel, .track-panel,
+  .chart-panel, .top-tracks, .settings-card, .dropzone {
+    transition:
+      background-color var(--duration-surface) var(--ease-cozy),
+      border-color var(--duration-surface) var(--ease-cozy),
+      box-shadow var(--duration-surface) var(--ease-cozy),
+      translate var(--duration-surface) var(--ease-cozy);
+  }
+  .track-row {
+    transition: background-color var(--duration-control) var(--ease-cozy), color var(--duration-control) var(--ease-cozy);
+  }
+  .color-panel { animation: cozy-panel-in var(--duration-surface) var(--ease-cozy); }
+  .rotation-tools { animation: cozy-panel-in var(--duration-control) var(--ease-cozy); }
+  .weather-switch b { transition: background-color var(--duration-control) var(--ease-cozy), color var(--duration-control) var(--ease-cozy); }
+  .app-shell input[type=range]::-webkit-slider-thumb {
+    transition: scale var(--duration-control) var(--ease-cozy), box-shadow var(--duration-control) var(--ease-cozy);
+  }
+  .app-shell input[type=range]::-moz-range-thumb {
+    transition: scale var(--duration-control) var(--ease-cozy), box-shadow var(--duration-control) var(--ease-cozy);
+  }
+}
+
+/* Hover motion belongs to a mouse/trackpad; touch gets the press response only. */
+@media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
+  .app-shell :is(.button, .text-button, .icon-button, .studio-settings,
+    .studio-navigation button, .playlist-link, .transport button,
+    .room-tool, .storm-preview, .tabs button):hover:not(:disabled):not(:active) {
+    translate: 0 -1px;
+  }
+  .button.primary:hover:not(:disabled), .room-heading .button:hover:not(:disabled),
+  .transport .play-button:hover:not(:disabled) {
+    box-shadow:var(--shadow-8);
+  }
+  .product-card:hover {
+    translate: 0 -3px;
+    box-shadow:var(--shadow-9);
+  }
+  .stat-grid > div:hover, .settings-card:hover,
+  .playlist-panel:hover, .track-panel:hover, .chart-panel:hover, .top-tracks:hover {
+    border-color: var(--tone-18);
+    background-color: var(--tone-19);
+  }
+  .track-row:hover { background-color: var(--tone-20); }
+  .track-row.current:hover { background-color: var(--tone-14); }
+  .app-shell input[type=range]:hover::-webkit-slider-thumb {
+    scale: 1.2; box-shadow:var(--shadow-10);
+  }
+  .app-shell input[type=range]:hover::-moz-range-thumb {
+    scale: 1.2; box-shadow:var(--shadow-10);
+  }
+}
+
+.product-card:focus-within { border-color: var(--tone-3); }
+
+@keyframes view-room-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes view-shop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes view-inventory-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes view-music-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes view-stats-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes view-settings-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes view-profile-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cozy-panel-in { from { opacity: 0; translate: 0 4px; } to { opacity: 1; translate: 0 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell .page-content, .app-shell .page-heading,
+  .app-shell .color-panel, .app-shell .rotation-tools { animation: none; }
+  .app-shell button, .app-shell select, .app-shell input,
+  .product-card, .stat-grid > div, .playlist-panel, .track-panel,
+  .chart-panel, .top-tracks, .settings-card, .track-row, .weather-switch b {
+    transition: none; translate: none; scale: none;
+  }
+}

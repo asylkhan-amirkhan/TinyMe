@@ -48,9 +48,9 @@ export function PixelGears() {
   return <svg className={styles.mechanism} viewBox="0 0 1754 896" preserveAspectRatio="xMidYMid slice" aria-hidden="true" fill="none">
     <defs>
       <radialGradient id="distant-mist">
-        <stop stopColor="#d5b7d1" stopOpacity=".22" />
-        <stop offset=".5" stopColor="#bda3c4" stopOpacity=".1" />
-        <stop offset="1" stopColor="#bda3c4" stopOpacity="0" />
+        <stop stopColor="#c3b1d4" stopOpacity=".22" />
+        <stop offset=".5" stopColor="#aaa3b4" stopOpacity=".1" />
+        <stop offset="1" stopColor="#aaa3b4" stopOpacity="0" />
       </radialGradient>
     </defs>
     {layers.map(layer => <g key={layer.className} className={layer.className}>
