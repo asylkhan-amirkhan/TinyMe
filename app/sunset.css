@@ -1,0 +1,63 @@
+/* Shared sunset palette: the intro and the room belong to the same evening. */
+:root {
+  --color-page: #493b48;
+  --color-card: #594653;
+  --color-inset: #66515d;
+  --color-hover: #765c66;
+  --color-text: #fff4e9;
+  --color-secondary: #e0c9c5;
+  --color-caption: #c4acae;
+  --color-accent: #f4c6a4;
+  --color-accent-soft: rgb(244 198 164 / 15%);
+  --color-cream: #ffe9cc;
+  --color-cream-hover: #ffddb7;
+  --color-on-cream: #4b3540;
+  --color-disabled: #51424e;
+  --color-disabled-text: #c1abb2;
+  --border-subtle: rgb(255 230 211 / 12%);
+  --border-control: rgb(255 230 211 / 20%);
+  --glass-bg: rgb(89 70 83 / 92%);
+  --shadow-floating: 0 16px 48px rgb(60 38 49 / 20%);
+  --studio-edge: rgb(255 225 196 / 17%);
+  --studio-highlight: inset 0 1px 0 rgb(255 239 220 / 8%);
+  --palette-1: #594653;
+  --palette-18: #fff1e5;
+  --palette-22: #806976;
+  --palette-23: #927480;
+  --palette-29: #51414f;
+  --palette-44: #594653f5;
+  --palette-56: #725867;
+  --palette-57: #614b59;
+}
+
+body {
+  background: radial-gradient(ellipse at 75% 10%, #80616c 0, transparent 65%), var(--color-page);
+  background-attachment: fixed;
+}
+.app-shell { background: transparent; }
+.immersive .player {
+  background: linear-gradient(145deg, #6b505d, #4d3c4b);
+  box-shadow: var(--studio-highlight), 0 8px 24px rgb(58 35 46 / 14%);
+}
+.studio-navigation, .studio-wallet, .studio-account .studio-settings {
+  border-color: var(--border-control);
+}
+.app-shell .room-stage { background: radial-gradient(ellipse at 65% 35%, #efc4a417, transparent 65%); }
+
+/* The four full-page panels share a softer dusk surface instead of near-black. */
+.immersive:is([data-view="shop"], [data-view="inventory"], [data-view="music"], [data-view="stats"]) .main {
+  --color-card: #463d53;
+  --color-inset: #51455e;
+  --color-hover: #62526c;
+  --studio-surface: linear-gradient(145deg, rgb(255 228 195 / 4%), transparent 65%), var(--color-card);
+  background:
+    radial-gradient(ellipse at 92% 8%, rgb(241 195 127 / 15%), transparent 55%),
+    radial-gradient(ellipse at 7% 70%, rgb(153 139 194 / 13%), transparent 65%),
+    linear-gradient(135deg, #34364f 0%, #40364e 55%, #51404e 100%);
+  background-repeat: no-repeat;
+  scrollbar-color: #97839d transparent;
+}
+.immersive:is([data-view="shop"], [data-view="inventory"], [data-view="music"], [data-view="stats"]) .player {
+  background: linear-gradient(145deg, #514355, #3d354b);
+  border-color: var(--studio-edge);
+}

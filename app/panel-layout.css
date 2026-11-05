@@ -1,0 +1,414 @@
+/* Panel content responds to its available inline size, never the window. */
+.immersive {--dock-h:60px;--panel-player-h:64px;}
+.immersive:has(.player[data-expanded="true"]) {--panel-player-h:224px;}
+.immersive .main {container:panel / inline-size;overflow-x:hidden;overflow-y:auto;padding-bottom:calc(var(--panel-player-h) + var(--dock-h) + 24px)!important;backdrop-filter:none;background:rgba(22,20,28,.92);scrollbar-width:thin;scrollbar-color:#635b70 transparent;}
+.immersive .main *, .immersive .main *::before,.immersive .main *::after {min-width:0;box-sizing:border-box;}
+.immersive .main .page-content {width:100%;max-width:100%;}
+.immersive .main .page-heading {display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:16px;margin:0 0 24px;padding:0 44px 0 0;}
+.immersive .main .page-heading>div:first-child {min-width:0;}
+.immersive .main .page-heading h1 {font-family:var(--font-title);font-size:clamp(32px,9cqi,48px);padding:0;margin:0;line-height:1.08;overflow-wrap:normal;}
+.immersive .main .page-heading p {margin:12px 0 0;line-height:1.6;overflow-wrap:anywhere;}
+.immersive .main .panel-close {position:absolute;top:24px;right:16px;float:none;margin:0;width:40px;height:40px;z-index:4;}
+.immersive .main :is(.account-layout,.settings-grid,.music-layout,.listening-main-grid,.listening-bottom-grid) {display:grid;grid-template-columns:minmax(0,1fr);gap:20px;width:100%;max-width:100%;margin-inline:0;}
+.immersive .main :is(.product-grid,.inventory-grid) {grid-template-columns:repeat(auto-fill,minmax(min(180px,100%),1fr));gap:12px;}
+.immersive .main :is(input,select,textarea) {max-width:100%;}
+.immersive .main .button {white-space:normal;}
+/* Profile: identity, metrics, form, then the original guest-room note. */
+.immersive .main .account-story {display:grid;grid-template-columns:64px minmax(0,1fr);gap:16px;align-items:center;padding:0;}
+.immersive .main .account-avatar {grid-column:1;grid-row:1;width:64px;height:64px;font-size:32px;border-radius:20px;}
+.immersive .main .account-story h2 {grid-column:2;grid-row:1;font-size:clamp(20px,5.5cqi,28px);max-width:none;overflow-wrap:anywhere;text-wrap:wrap;}
+.immersive .main .account-story>:not(.account-avatar):not(h2) {grid-column:1/-1;}
+.immersive .main .account-story>p {max-width:none;line-height:1.6;}
+.immersive .main .account-metrics {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%;order:2;}
+.immersive .main .account-metrics>div {padding:12px 8px;background:#ffffff04;border:1px solid #ffffff0d;border-radius:16px;}
+.immersive .main .account-metrics dt {font-size:13px;line-height:1.5;}
+.immersive .main .account-metrics dd {white-space:nowrap;font-size:clamp(24px,6cqi,32px);}
+.immersive .main .account-card {padding:20px;width:100%;}
+.immersive .main .account-card h2 {margin-top:0;}
+.immersive .main .account-colors {flex-wrap:wrap;gap:12px;}
+.immersive .main .account-note {margin:0;font-size:13px;line-height:1.7;color:var(--color-secondary);}
+.immersive .main .account-footer {flex-wrap:wrap;gap:12px;}
+/* Settings: the switch track stays at the same right edge on each row. */
+.immersive .main .settings-card {width:100%;padding:20px;min-height:0;}
+.immersive .main .settings-card h2 {font-size:20px;line-height:1.4;}
+.immersive .main .settings-card h2+.button {margin-top:16px;}
+.immersive .main .sound-channel-list {display:grid;gap:12px;}
+.immersive .main .sound-channel-row {position:relative;display:block;padding:0;border:1px solid var(--border-control);border-radius:16px;}
+.immersive .main .sound-channel-row .sound-setting-toggle {width:100%;padding:16px 16px 64px;border:0;background:none;align-items:start;}
+.immersive .main .sound-channel-copy {flex:1;min-width:0;overflow-wrap:anywhere;}
+.immersive .main .sound-setting-toggle {width:100%;display:flex;justify-content:space-between;gap:16px;padding:16px;}
+.immersive .main .sound-switch-track {flex:0 0 44px;width:44px;margin:0;}
+.immersive .main [aria-checked="true"] .sound-switch-track {background:var(--color-accent);}
+.immersive .main [aria-checked="true"] .sound-switch-track i {background:var(--color-on-cream);}
+.immersive .main .sound-channel-preview {position:absolute;left:16px;bottom:12px;margin:0;min-height:40px;}
+/* Catalog and inventory. */
+.immersive .main .shop-search-row {display:block;margin:0 0 12px;width:100%;}
+.immersive .main .shop-search {width:100%;max-width:none;}
+.immersive .main .shop-sort-row {display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;}
+.immersive .main .search-count {font-size:13px;white-space:nowrap;}
+.immersive .main .filter-row {display:block;width:100%;}
+.immersive .main .filter-row>.tabs {display:flex;flex-wrap:nowrap;width:100%;overflow-x:auto;scrollbar-width:none;gap:8px;mask-image:linear-gradient(to right,transparent,#000 10px,#000 calc(100% - 10px),transparent);padding-inline:8px;}
+.immersive .main .filter-row>.tabs::-webkit-scrollbar {display:none;}
+.immersive .main .filter-row>.tabs button {flex:0 0 auto;white-space:nowrap;}
+.immersive .main .shop-favorites-entry {grid-column:1/-1;margin:0;width:100%;}
+.immersive .main .product-card {display:flex;flex-direction:column;gap:8px;}
+.immersive .main .product-card h3 {margin:0;overflow-wrap:anywhere;min-height:0;}
+.immersive .main .product-bottom {margin-top:auto;}
+.immersive .main .product-image {width:100%;flex-shrink:0;}
+.immersive .main .inventory-toolbar {padding:16px;margin-bottom:20px;}
+.immersive .main .inventory-toolbar .search-count {display:block;text-align:right;margin-top:8px;}
+.immersive .main .inventory-filter-row {display:grid;grid-template-columns:minmax(0,1fr);gap:12px;}
+.immersive .main .inventory-filter-row>.tabs {display:flex;width:100%;gap:4px;}
+.immersive .main .inventory-filter-row>.tabs button {flex:1;padding-inline:8px;font-size:13px;white-space:nowrap;}
+.immersive .main .inventory-selects {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:8px;}
+.immersive .main .inventory-selects>* {width:100%;}
+.immersive .main .inventory-selects button {width:100%;min-width:0;}
+/* Music: horizontal playlists and a full-width track list. */
+.immersive .main .playlist-panel {display:block;padding:16px;width:100%;}
+.immersive .main .playlist-panel .section-heading {margin-bottom:12px;}
+.immersive .main .playlist-chips {display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;max-width:100%;}
+.immersive .main .playlist-link {flex:0 0 auto;display:flex;gap:8px;width:auto;max-width:100%;margin:0;padding:10px 12px;}
+.immersive .main .playlist-link span {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.immersive .main .playlist-panel form {margin-top:16px;max-width:none;width:100%;}
+.immersive .main .inline-input {display:flex;width:100%;}
+.immersive .main .inline-input input {flex:1;width:0;min-width:0;}
+.immersive .main .inline-input button {flex:0 0 44px;}
+.immersive .main .storage-note {display:flex;margin:16px 0 0;max-width:none;}
+.immersive .main .storage-note svg {flex-shrink:0;}
+.immersive .main .track-panel {padding:16px;width:100%;}
+.immersive .main .playlist-heading {display:flex;align-items:center;gap:16px;margin:0 0 16px;}
+.immersive .main .playlist-heading .album-art {flex:0 0 72px;width:72px;height:72px;}
+.immersive .main .playlist-heading>div:nth-child(2) {flex:1;}
+.immersive .main .playlist-heading h2 {font-size:clamp(20px,5.5cqi,28px);overflow-wrap:anywhere;}
+.immersive .main .track-header,.immersive .main .track-row {display:grid;grid-template-columns:40px minmax(0,1fr) 44px;gap:8px;min-width:0;width:100%;padding-inline:0;}
+.immersive .main .track-row>div:nth-child(2) strong {white-space:normal;overflow-wrap:anywhere;}
+.immersive .main .track-row>span {white-space:nowrap;}
+.immersive .main .track-actions {grid-column:2/-1;display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;}
+.immersive .main .track-header>span:last-child {display:none;}
+.immersive .main .track-playlist-picker {grid-column:1/-1;max-width:100%;}
+.immersive .main .upload-zone {width:100%;min-width:0;padding:24px 16px;}
+/* Statistics: compact metrics; every detailed section stacks. */
+.immersive .main .listening-heading {display:block;}
+.immersive .main .listening-period {display:flex;width:100%;margin-top:20px;padding:4px;gap:0;}
+.immersive .main .listening-period button {flex:1;min-width:0;padding:8px 4px;font-size:13px;white-space:nowrap;}
+.immersive .main .listening-metrics {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+.immersive .main .listening-metric {padding:12px 8px;grid-column:auto;overflow:hidden;}
+.immersive .main .listening-metric>header {min-width:0;display:block;}
+.immersive .main .listening-metric>header span {display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;}
+.immersive .main .listening-metric>header svg {display:none;}
+.immersive .main .listening-metric>strong {display:block;font-size:clamp(28px,8cqi,40px);white-space:nowrap;line-height:1.2;letter-spacing:-1px;margin-block:16px;}
+.immersive .main .listening-metric>strong span {font-size:13px;letter-spacing:0;}
+.immersive .main .listening-metric>small {display:block;font-size:13px;overflow-wrap:anywhere;}
+.immersive .main :is(.listening-chart-panel,.listening-favorite,.listening-calendar,.listening-ranking) {padding:16px;display:block;}
+.immersive .main .listening-record-scene {transform:none;max-width:100%;margin:24px auto;}
+.immersive .main .listening-chart-detail {flex-wrap:wrap;gap:8px;}
+.immersive .main .listening-panel-heading {flex-wrap:wrap;gap:8px;}
+.immersive .main .listening-calendar-grid {gap:6px;}
+.immersive .main .listening-calendar-grid button {min-height:40px;}
+.immersive .main .listening-calendar-detail {flex-wrap:wrap;}
+/* Dock: content-sized targets instead of five equal cramped columns. */
+.immersive .studio-navigation {display:flex;width:max-content;max-width:calc(100% - 24px);padding:6px;gap:4px;}
+.immersive .studio-navigation::before {display:none;}
+.immersive .studio-navigation button {flex:0 0 auto;width:44px;min-width:44px;padding:0 12px;position:relative;}
+.immersive .studio-navigation button.active {width:auto;min-width:unset;padding-inline:12px;background:color-mix(in srgb,var(--ambient) 20%,#282431);border-radius:18px;}
+.immersive .studio-navigation button.active span {white-space:nowrap;}
+.immersive .studio-navigation button:hover:not(.active) span,.immersive .studio-navigation button:focus-visible:not(.active) span {bottom:58px;left:50%;transform:translateX(-50%);}
+@container panel (width < 640px) {
+ .immersive .main :is(.account-layout,.settings-grid,.music-layout,.listening-main-grid,.listening-bottom-grid) {grid-template-columns:minmax(0,1fr);}
+ .immersive .main .page-heading>.button {padding:8px;gap:4px;font-size:13px;}
+ .immersive .main .account-cloud {flex-wrap:wrap;}
+ .immersive .main .listening-ranking li {grid-template-columns:20px minmax(0,1fr) 40px;}
+ .immersive .main .listening-rank-time {grid-column:2;grid-row:2;}
+ .immersive .main .listening-track-play {grid-column:3;grid-row:1/3;min-height:40px;}
+}
+@container panel (width < 380px) {
+ .immersive .main .account-card,.immersive .main .settings-card {padding:16px;}
+ .immersive .main .account-metrics dt {min-height:39px;}
+ .immersive .main .listening-metric>strong {font-size:28px;}
+ .immersive .main .listening-metric>small {font-size:13px;line-height:1.5;}
+ .immersive .main .inventory-filter-row>.tabs {gap:2px;}
+ .immersive .main .inventory-filter-row>.tabs button {padding-inline:4px;}
+ .immersive .main .inventory-toolbar {padding:12px;}
+ .immersive .main .listening-chart-summary {flex-wrap:wrap;}
+ .immersive .main .playlist-heading .album-art {width:56px;height:56px;flex-basis:56px;}
+ .immersive .main .account-story {grid-template-columns:56px minmax(0,1fr);}
+ .immersive .main .account-avatar {width:56px;height:56px;}
+}
+@media(max-width:768px){.immersive .main .panel-close {top:48px;}.immersive .main .sheet-handle {margin-bottom:12px;}}
+.immersive .main .page-content {padding:0;}
+.immersive .main .panel-close {top:32px;}
+.immersive .main .listening-metric>span {display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;line-height:20px;}
+.immersive .main .listening-metric>span svg {display:none;}
+.immersive .main .listening-metric>strong {margin:16px 0;}
+.immersive .main .account-metrics dt {min-height:39px;}
+.immersive[data-view="stats"] .main .page-heading {padding-right:0;}
+.immersive[data-view="stats"] .main .page-heading>div:first-child {padding-right:44px;}
+.immersive .main .listening-heading .listening-period {margin-top:20px;}
+@media(max-width:768px){.immersive .main .panel-close {top:60px;}}
+.immersive .main .listening-record-scene {width:240px;}
+@container panel (width < 380px) {
+ .immersive .main .listening-metric {padding-inline:4px;}
+}
+@container panel (width < 640px) {
+  .immersive .main .page-heading:has(>button) {grid-template-columns:minmax(0,1fr);}
+  .immersive .main .page-heading>button {justify-self:start;}
+}
+
+/* Full-page sections retain the mounted room and audio underneath. */
+.immersive:not([data-view="room"]) .immersive-room {visibility:hidden;pointer-events:none;}
+.immersive .main,.immersive:is([data-view="profile"],[data-view="settings"]) .main {
+  inset:88px 0 0;width:100%;height:auto;max-height:none;margin:0;
+  border:0;border-radius:0;box-shadow:none;backdrop-filter:none;
+  padding:40px max(32px,calc((100% - 1200px)/2)) calc(var(--panel-player-h) + var(--dock-h) + 48px)!important;
+  z-index:40;transform:none;opacity:1;background:#16141c;
+  transition:opacity 200ms var(--ease-cozy);
+}
+.immersive[data-effects="quiet"] .main {background:#16141c;}
+.immersive[data-view="room"] .main {transform:none;opacity:0;pointer-events:none;visibility:hidden;}
+.immersive .main .page-heading,.immersive[data-view="stats"] .main .page-heading>div:first-child {padding-right:0;}
+.immersive .main .page-heading p {max-width:65ch;}
+.immersive:is([data-view="profile"],[data-view="settings"]) .main .page-content {max-width:760px;margin-inline:auto;}
+.immersive:not([data-view="room"]) .session-strip {visibility:hidden;}
+@container panel (width >= 640px) {
+  .immersive .main :is(.listening-main-grid,.listening-bottom-grid) {grid-template-columns:repeat(2,minmax(0,1fr));}
+  .immersive .main .listening-metric {padding:20px;}
+  .immersive .main .product-grid,.immersive .main .inventory-grid {gap:20px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));}
+  .immersive .main .product-image {height:188px;}
+  .immersive .main .playlist-chips {flex-wrap:wrap;}
+}
+@media(max-width:768px) {
+  .immersive .main,.immersive:is([data-view="profile"],[data-view="settings"]) .main {
+    inset:76px 0 0;width:100%;height:calc(100dvh - 76px);
+    padding:24px 16px calc(var(--panel-player-h) + var(--dock-h) + 48px + env(safe-area-inset-bottom))!important;
+  }
+  .immersive .main .page-heading h1 {font-size:clamp(32px,9cqi,48px);}
+}
+
+/* Music library: a quiet record shelf, with the collection as the focal point. */
+.immersive[data-view="music"] .main .page-heading {align-items:center;margin-bottom:20px;}
+.immersive[data-view="music"] .main .page-heading h1 {font-size:clamp(40px,5cqi,64px);letter-spacing:-1.8px;}
+.immersive[data-view="music"] .main .page-content>p[role="status"] {font-size:13px;color:var(--color-secondary);margin:0 0 28px;}
+.immersive[data-view="music"] .main .music-layout {align-items:start;gap:28px;}
+.immersive[data-view="music"] .main .playlist-panel {padding:20px;border-color:#ffffff09;background:#ffffff02;border-radius:24px;}
+.immersive[data-view="music"] .main .playlist-panel h3 {font-size:15px;font-weight:600;}
+.immersive[data-view="music"] .main .playlist-link {border-radius:12px;min-height:48px;border-color:transparent;background:transparent;}
+.immersive[data-view="music"] .main .playlist-link.active {background:#b6a1d51a;border-color:#b6a1d52e;box-shadow:inset 3px 0 #baa5cf;}
+.immersive[data-view="music"] .main .playlist-link small {margin-left:auto;background:#ffffff08;padding:2px 8px;border-radius:8px;}
+.immersive[data-view="music"] .main .playlist-panel form {margin-top:28px;padding-top:24px;border-top:1px solid #ffffff0a;}
+.immersive[data-view="music"] .main .inline-input {background:#ffffff04;border:1px solid #ffffff12;border-radius:12px;}
+.immersive[data-view="music"] .main .inline-input input {background:transparent;border:0;font-size:13px;padding:12px;}
+.immersive[data-view="music"] .main .storage-note {font-size:13px;line-height:1.7;margin-top:24px;gap:10px;color:var(--color-secondary);}
+.immersive[data-view="music"] .main .track-panel {padding:24px;border-radius:24px;background:#ffffff02;border-color:#ffffff0b;}
+.immersive[data-view="music"] .main .playlist-heading {padding:24px;margin:-24px -24px 24px;gap:24px;border-radius:24px 24px 0 0;background:linear-gradient(115deg,#ad91cc1c,transparent 85%);border-bottom:1px solid #ffffff08;}
+.immersive[data-view="music"] .main .playlist-heading .album-art {width:128px;height:128px;flex-basis:128px;border-radius:20px;box-shadow:0 12px 32px #00000020;}
+.immersive[data-view="music"] .main .playlist-heading h2 {font-size:clamp(24px,3cqi,36px);line-height:1.15;letter-spacing:-.8px;margin:0 0 12px;}
+.immersive[data-view="music"] .main .playlist-heading p {font-size:13px;margin:0;color:var(--color-secondary);}
+.immersive[data-view="music"] .main .playlist-guidance {font-size:13px;line-height:1.7;margin:0 0 24px;max-width:65ch;}
+.immersive[data-view="music"] .main .track-header {font-size:13px;padding:12px 8px;border-bottom:1px solid #ffffff0a;}
+.immersive[data-view="music"] .main .track-row {min-height:76px;padding:12px 8px;margin:4px 0;border:1px solid transparent;border-radius:12px;transition:background-color 200ms var(--ease-cozy),border-color 200ms var(--ease-cozy);}
+.immersive[data-view="music"] .main .track-row.current {background:#baa5cf0d;border-color:#baa5cf20;box-shadow:inset 2px 0 #baa5cf;}
+.immersive[data-view="music"] .main .track-row:hover {background:#ffffff07;}
+.immersive[data-view="music"] .main .track-row strong {font-size:14px;}
+.immersive[data-view="music"] .main .track-row small {font-size:13px;margin-top:4px;color:var(--color-secondary);}
+.immersive[data-view="music"] .main .track-row>span {font-size:13px;color:var(--color-secondary);text-align:right;}
+.immersive[data-view="music"] .main .track-actions {gap:4px;}
+.immersive[data-view="music"] .main .playlist-add {padding:8px;min-height:40px;border-radius:10px;}
+.immersive[data-view="music"] .main .dropzone {width:100%;margin-top:24px;padding:28px 20px;min-height:140px;border:1px dashed #baa5cf30;background:#baa5cf03;border-radius:16px;gap:10px;}
+.immersive[data-view="music"] .main .dropzone:hover {background:#baa5cf09;border-color:#baa5cf70;}
+.immersive[data-view="music"] .main .dropzone>svg {width:24px;height:24px;color:#baa5cf;}
+.immersive[data-view="music"] .main .dropzone strong {font-size:14px;font-weight:500;}
+.immersive[data-view="music"] .main .dropzone span {font-size:13px;}
+@container panel (width >= 900px) {
+ .immersive[data-view="music"] .main .music-layout {grid-template-columns:260px minmax(0,1fr);}
+ .immersive[data-view="music"] .main .playlist-chips {display:flex;flex-direction:column;}
+ .immersive[data-view="music"] .main .playlist-link {width:100%;}
+ .immersive[data-view="music"] .main .track-header,.immersive[data-view="music"] .main .track-row {grid-template-columns:40px minmax(0,1fr) 48px 144px;gap:12px;}
+ .immersive[data-view="music"] .main .track-actions {grid-column:4;grid-row:1;}
+ .immersive[data-view="music"] .main .track-header>span:last-child {display:block;}
+}
+@container panel (width < 640px) {
+ .immersive[data-view="music"] .main .playlist-heading .album-art {width:80px;height:80px;flex-basis:80px;border-radius:16px;}
+ .immersive[data-view="music"] .main .track-panel {padding:16px;}
+ .immersive[data-view="music"] .main .playlist-heading {margin:-16px -16px 20px;padding:20px 16px;gap:16px;}
+ .immersive[data-view="music"] .main .page-heading {align-items:start;}
+ .immersive[data-view="music"] .main .playlist-heading h2 {font-size:24px;}
+}
+
+/* Expanded island: opaque listening controls, separated from page content. */
+.immersive .player[data-expanded="true"] {
+ --player-h:264px;width:460px;max-width:calc(100% - 24px);height:var(--player-h);
+ grid-template-columns:52px minmax(0,1fr) 40px;grid-template-rows:52px 56px 24px 44px;
+ gap:12px;padding:18px;border-radius:28px;background:#24212b;
+ border:1px solid #ffffff14;box-shadow:0 12px 36px #08070c38,inset 0 1px #ffffff0c;
+}
+.immersive:has(.player[data-expanded="true"]) {--panel-player-h:264px;}
+.immersive .player[data-expanded="true"] .album-art {width:52px;height:52px;border-radius:16px;}
+.immersive .player[data-expanded="true"] .player-track {align-self:center;grid-column:2;grid-row:1;}
+.immersive .player[data-expanded="true"] .player-track strong {font-size:15px;font-weight:600;line-height:1.5;}
+.immersive .player[data-expanded="true"] .player-track>span {display:block;font-size:13px;margin-top:3px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;color:var(--color-secondary);}
+.immersive .player[data-expanded="true"] .island-toggle {grid-column:3;grid-row:1;margin:0;align-self:center;background:#ffffff04;}
+.immersive .player[data-expanded="true"] .transport {grid-column:1/-1;grid-row:2;gap:16px;align-items:center;}
+.immersive .player[data-expanded="true"] .transport>button {width:40px;height:40px;min-height:40px;border-radius:12px;color:#b9b3c3;background:transparent;transition:background-color 180ms var(--ease-cozy),color 180ms var(--ease-cozy);}
+.immersive .player[data-expanded="true"] .transport>button:hover {background:#ffffff09;color:#f3e9dc;}
+.immersive .player[data-expanded="true"] .transport>button.enabled {background:#baa5cf18;color:#d3bfeb;}
+.immersive .player[data-expanded="true"] .transport>.play-button {width:56px;height:56px;min-height:56px;border-radius:18px;background:var(--color-cream);color:var(--color-on-cream);}
+.immersive .player[data-expanded="true"] .transport>.play-button:hover {background:var(--color-cream-hover);color:var(--color-on-cream);}
+.immersive .player[data-expanded="true"] .seek-row {position:static;grid-row:3;grid-column:1/-1;gap:12px;width:100%;margin:0;font-size:13px;align-items:center;}
+.immersive .player[data-expanded="true"] .seek-row>span {min-width:32px;font-variant-numeric:tabular-nums;}
+.immersive .player[data-expanded="true"] .seek-row>span:last-child {text-align:right;}
+.immersive .player[data-expanded="true"] .player-volume {grid-row:4;grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:4px 0 0;border-top:1px solid #ffffff0a;color:#b9b3c3;}
+.immersive .player[data-expanded="true"] .player-volume>svg {width:18px;height:18px;flex-shrink:0;}
+.immersive .player[data-expanded="true"] .player-volume>.icon-button {width:40px;height:40px;min-height:40px;border:0;background:#ffffff04;border-radius:12px;}
+.immersive .player[data-expanded="true"] input[type="range"] {height:4px;border:0;border-radius:999px;padding:0;min-width:0;cursor:pointer;}
+.immersive .player[data-expanded="true"] input[type="range"]::-webkit-slider-runnable-track {height:4px;border-radius:999px;background:transparent;}
+.immersive .player[data-expanded="true"] input[type="range"]::-webkit-slider-thumb {width:10px;height:10px;margin-top:-3px;background:#c6b2d8;}
+@media(max-width:480px) {
+ .immersive .player[data-expanded="true"] {padding-inline:14px;gap:12px 10px;}
+ .immersive .player[data-expanded="true"] .transport {gap:10px;}
+ .immersive .player[data-expanded="true"] .player-track strong {font-size:14px;}
+}
+.immersive .player[data-expanded="true"] {overflow:hidden;}
+
+/* The island resizes as one surface; controls fade in after it starts opening. */
+.immersive .player {
+ transition:width 380ms cubic-bezier(.22,1,.36,1),height 380ms cubic-bezier(.22,1,.36,1),padding 380ms cubic-bezier(.22,1,.36,1),border-radius 380ms cubic-bezier(.22,1,.36,1),background-color 250ms ease;
+ overflow:hidden;
+}
+.immersive .player .album-art {transition:width 380ms cubic-bezier(.22,1,.36,1),height 380ms cubic-bezier(.22,1,.36,1),border-radius 380ms cubic-bezier(.22,1,.36,1);}
+.immersive .player[data-expanded="true"] :is(.seek-row,.player-volume,.transport) {animation:island-controls-in 340ms cubic-bezier(.22,1,.36,1) both;}
+.immersive .player[data-expanded="true"] .seek-row {animation-delay:60ms;}
+.immersive .player[data-expanded="true"] .player-volume {animation-delay:100ms;}
+@keyframes island-controls-in {from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+@media(prefers-reduced-motion:reduce) {
+ .immersive .player,.immersive .player .album-art {transition:background-color 150ms ease;}
+ .immersive .player[data-expanded="true"] :is(.seek-row,.player-volume,.transport) {animation:none;}
+}
+
+/* Keep native range input for seeking; interpolate its visual playback marker. */
+.immersive .player .seek-track {position:relative;flex:1;min-width:0;height:24px;display:flex;align-items:center;}
+.immersive .player .seek-track::before {content:'';position:absolute;left:0;right:0;height:4px;border-radius:999px;background:var(--border-control);pointer-events:none;}
+.immersive .player .seek-progress {position:absolute;left:0;top:10px;height:4px;border-radius:999px;background:var(--color-accent);pointer-events:none;transition:width 260ms linear;}
+.immersive .player .seek-progress::after {content:'';position:absolute;right:0;top:50%;width:10px;height:10px;border-radius:50%;background:#c6b2d8;transform:translate(50%,-50%);opacity:0;transition:opacity 160ms ease;}
+.immersive .player .seek-track:is(:hover,:focus-within) .seek-progress::after {opacity:1;}
+.immersive .player .seek-track input[type="range"] {position:relative;z-index:1;width:100%;height:24px;margin:0;background:transparent!important;opacity:0;}
+.immersive .player .seek-track:focus-within {outline:2px solid var(--color-accent);outline-offset:3px;border-radius:8px;}
+.immersive .player .seek-track:active .seek-progress,.immersive .player .seek-track[data-playing="false"] .seek-progress {transition:none;}
+@media(hover:none){.immersive .player .seek-progress::after{opacity:1;}}
+@media(prefers-reduced-motion:reduce){.immersive .player .seek-progress{transition:none;}}
+
+/* Atmosphere palette: compact left-hand controls, never a strip across the room. */
+.immersive .palette-trigger {left:28px;bottom:188px;min-height:44px;border-radius:16px;background:#24212b;border-color:#ffffff12;gap:10px;}
+.immersive .palette-trigger[aria-expanded="true"] {background:#332c40;border-color:#baa5cf40;color:#e2d5ee;}
+.immersive[data-palette="true"] .room-tools {
+ position:fixed;left:28px;right:auto;top:auto;bottom:244px;width:280px;max-width:calc(100vw - 56px);
+ display:block;padding:12px;background:#24212b;border:1px solid #ffffff12;border-top:0;
+ border-radius:0 0 20px 20px;pointer-events:auto;z-index:20;
+}
+.immersive[data-palette="true"] .room-tools>.room-tool-group {display:grid;grid-template-columns:minmax(0,1fr);gap:8px;width:100%;}
+.immersive[data-palette="true"] .room-tools .room-tool-group>.room-tool,
+.immersive[data-palette="true"] .room-tools .accent-settings>summary {
+ width:100%;min-height:44px;padding:10px 12px;justify-content:flex-start;border:1px solid #ffffff09;border-radius:12px;background:#ffffff03;font-size:13px;
+}
+.immersive[data-palette="true"] .room-tools .season-control {display:flex;justify-content:space-between;}
+.immersive[data-palette="true"] .room-tools .room-tool-group>.room-tool:hover,
+.immersive[data-palette="true"] .room-tools .accent-settings>summary:hover {background:#ffffff07;border-color:#baa5cf30;}
+.immersive[data-palette="true"] .lighting-controls {
+ position:fixed;left:28px;right:auto;top:auto;bottom:424px;width:280px;max-width:calc(100vw - 56px);height:60px;
+ padding:10px 12px;display:flex;gap:8px;border:1px solid #ffffff12;border-bottom:1px solid #ffffff08;
+ border-radius:20px 20px 0 0;background:#24212b;z-index:21;
+}
+.immersive[data-palette="true"] .lighting-controls .rain-menu-button {margin-right:auto;padding:8px;min-height:40px;border:0;border-radius:10px;background:#ffffff03;font-size:13px;}
+.immersive[data-palette="true"] .lighting-controls .select-trigger {min-height:40px;font-size:13px;}
+.immersive[data-palette="true"] .accent-settings-panel,
+.immersive[data-palette="true"] #room-colors {position:fixed;left:324px;right:auto;top:auto;bottom:244px;width:360px;max-width:calc(100vw - 348px);max-height:calc(100dvh - 340px);overflow-y:auto;z-index:30;background:#24212b;border:1px solid #ffffff14;border-radius:20px;}
+@media(max-width:768px) {
+ .immersive .palette-trigger {left:12px;bottom:176px;}
+ .immersive[data-palette="true"] .room-tools {left:12px;bottom:232px;max-width:calc(100vw - 24px);}
+ .immersive[data-palette="true"] .lighting-controls {left:12px;bottom:412px;max-width:calc(100vw - 24px);}
+ .immersive[data-palette="true"] .accent-settings-panel,
+ .immersive[data-palette="true"] #room-colors {left:12px;right:12px;bottom:232px;width:auto;max-width:none;max-height:calc(100dvh - 320px);z-index:35;}
+}
+.immersive[data-palette="true"] .room-tools {height:180px;box-sizing:border-box;}
+.immersive[data-palette="true"] .room-tools .room-tool-group>.room-tool,
+.immersive[data-palette="true"] .room-tools .accent-settings>summary {height:44px;box-sizing:border-box;}
+.immersive[data-palette="true"] .room-tools .season-control {padding-block:0;}
+/* Furniture workspace: reserve the inspector column exactly once. */
+.immersive .room-layout:has(.has-inspector) { inset:132px 24px 176px; }
+.immersive .room-stage.has-inspector,
+.immersive .room-stage.expanded.has-inspector {
+  grid-template-columns:minmax(0,1fr) 320px; grid-template-rows:minmax(0,1fr);
+  gap:24px; height:100%; padding:0;
+}
+.immersive .room-stage.has-inspector .room-scene { width:100%; height:100%; }
+.immersive .has-inspector .room-canvas { inset:0; height:auto!important; width:100%; }
+.immersive:has(.has-inspector) .room-heading { top:84px; left:40px; display:flex; align-items:baseline; gap:20px; }
+.immersive:has(.has-inspector) .room-heading h1 { font-size:32px; letter-spacing:-1px; }
+.immersive:has(.has-inspector) .room-heading p { margin:0; }
+.immersive:has(.has-inspector) .room-heading-actions,
+.immersive:has(.has-inspector) .palette-trigger,
+.immersive .room-stage.has-inspector .room-tools,
+.immersive .room-stage.has-inspector .lighting-controls { display:none; }
+.immersive .has-inspector .room-editor-exit { left:auto; right:8px; top:0; background:transparent; border-color:transparent; }
+.immersive .has-inspector .scene-footer { bottom:0; right:16px; left:auto; }
+.immersive .furniture-inspector {
+  align-self:center; max-height:100%; border-radius:24px;
+  background:var(--color-surface, #211e29); border:1px solid #ffffff12;
+  box-shadow:inset 0 1px #ffffff08;
+}
+.immersive .inspector-heading { padding:20px; gap:12px; }
+.immersive .inspector-heading canvas { width:64px!important; height:64px!important; border:0; border-radius:16px; background:#ffffff04; }
+.immersive .inspector-heading span { text-transform:none; letter-spacing:0; color:var(--color-secondary); font-size:13px; }
+.immersive .inspector-heading h2 { font-size:18px; line-height:1.4; }
+.immersive .inspector-heading .icon-button { width:40px; min-width:40px; height:40px; align-self:flex-start; }
+.immersive .inspector-body { padding:20px; }
+.immersive .inspector-hint { color:var(--color-secondary); font-size:13px; line-height:1.6; margin-bottom:20px; }
+.immersive .inspector-rotation { background:#ffffff03; border:1px solid #ffffff08; border-radius:16px; gap:4px; padding:4px; }
+.immersive .inspector-rotation .button { background:transparent; padding-inline:8px; }
+.immersive .inspector-rotation .button:hover { background:#ffffff08; }
+.immersive .inspector-rotation output { font-size:16px; font-variant-numeric:tabular-nums; }
+.immersive .inspector-footer { padding:16px 20px 20px; gap:8px; background:transparent; }
+.immersive .furniture-inspector .inspector-store { background:transparent; border-color:transparent; color:var(--color-secondary); }
+.immersive .furniture-inspector .inspector-store:hover { background:#ffffff06; color:var(--color-text); }
+@media(max-width:1024px) and (min-width:769px) {
+  .immersive .room-layout:has(.has-inspector) { inset:132px 16px 176px; }
+  .immersive .room-stage.has-inspector { grid-template-columns:minmax(0,1fr) 288px; gap:12px; }
+}
+@media(max-width:768px) {
+  .immersive:has(.has-inspector) .room-heading { top:80px; left:16px; }
+  .immersive:has(.has-inspector) .room-heading h1 { font-size:32px; }
+  .immersive:has(.has-inspector) .room-heading p { display:none; }
+  .immersive .room-layout:has(.has-inspector) { inset:124px 12px 170px; }
+  .immersive .room-stage.has-inspector,
+  .immersive .room-stage.expanded.has-inspector { grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(100px,1fr) auto; gap:8px; }
+  .immersive .has-inspector .room-canvas { inset:0 0 44px; }
+  .immersive .has-inspector .room-editor-exit { top:0; left:0; padding:8px; }
+  .immersive .has-inspector .scene-footer { right:0; bottom:0; }
+  .immersive .furniture-inspector { max-height: min(42dvh,360px); border-radius:20px; }
+  .immersive .inspector-heading { padding:12px 16px; }
+  .immersive .inspector-heading canvas { width:44px!important; height:44px!important; }
+  .immersive .inspector-body { padding:12px 16px; }
+  .immersive .inspector-footer { padding:12px 16px; }
+}
+/* Inventory: compact filters with full-height page scrolling. */
+.immersive[data-view="inventory"] .main .inventory-toolbar {
+  padding:0 0 20px;background:transparent;border:0;border-radius:0;
+  box-shadow:none;display:flex;flex-direction:column;gap:12px;
+}
+.immersive[data-view="inventory"] .inventory-toolbar .shop-search-row {display:flex;align-items:center;gap:16px;margin:0;}
+.immersive[data-view="inventory"] .inventory-toolbar .shop-search {flex:1;min-width:0;max-width:none;}
+.immersive[data-view="inventory"] .main .inventory-toolbar .search-count {margin:0;white-space:nowrap;font-size:13px;}
+.immersive[data-view="inventory"] .main .inventory-filter-row {display:flex;flex-wrap:wrap;align-items:center;gap:12px;}
+.immersive[data-view="inventory"] .main .inventory-filter-row>.tabs {width:auto;margin:0;padding:4px;flex:none;}
+.immersive[data-view="inventory"] .main .inventory-filter-row>.tabs button {flex:none;min-height:40px;padding:8px 16px;}
+.immersive[data-view="inventory"] .main .inventory-selects {width:auto;flex:1;max-width:440px;margin-left:auto;}
+ .immersive[data-view="inventory"] .main .product-grid {gap:20px;}
+.immersive[data-view="inventory"] .main .product-card {padding:16px;gap:8px;}
+.immersive[data-view="inventory"] .main .product-card>.button {width:100%;min-height:44px;margin-top:0;}
+.immersive[data-view="inventory"] .main .product-card h3 {margin-bottom:12px;}
+@container panel (width < 760px) {
+  .immersive[data-view="inventory"] .inventory-toolbar .shop-search-row {flex-wrap:wrap;gap:8px;}
+  .immersive[data-view="inventory"] .inventory-toolbar .shop-search {flex-basis:100%;}
+  .immersive[data-view="inventory"] .main .inventory-selects {flex-basis:100%;max-width:none;margin:0;}
+  .immersive[data-view="inventory"] .main .inventory-filter-row>.tabs {width:100%;}
+  .immersive[data-view="inventory"] .main .inventory-filter-row>.tabs button {flex:1;padding-inline:8px;}
+}

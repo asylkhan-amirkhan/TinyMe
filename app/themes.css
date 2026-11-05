@@ -1,0 +1,131 @@
+/* Dark is the default; light uses the same sunset accents. */
+:root {
+  color-scheme: dark;
+  --color-page: #211f30;
+  --color-card: #383144;
+  --color-inset: #443b50;
+  --color-hover: #51455e;
+  --color-secondary: #d9c9ce;
+  --color-caption: #b8a5b5;
+  --glass-bg: #302a3df2;
+  --palette-1: #383144;
+  --palette-29: #292536;
+  --palette-44: #302a3df5;
+  --palette-56: #443b50;
+  --palette-57: #383144;
+}
+body {
+  background: radial-gradient(ellipse at 80% 5%, #513b522e, transparent 65%), var(--color-page);
+  background-attachment: fixed;
+}
+.immersive .main {
+  background: linear-gradient(135deg, #242338, #2d253a);
+}
+.immersive:is([data-view="shop"], [data-view="inventory"], [data-view="music"], [data-view="stats"]) .main {
+  --color-card: #3a334a;
+  --color-inset: #463d55;
+  --color-hover: #51465f;
+  background:
+    radial-gradient(ellipse at 95% 0, #e6ae6012, transparent 55%),
+    linear-gradient(135deg, #202337 0%, #282337 60%, #32283b 100%);
+}
+.immersive .player,
+.immersive:is([data-view="shop"], [data-view="inventory"], [data-view="music"], [data-view="stats"]) .player {
+  background: linear-gradient(145deg, #393044, #292438);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-page: #f5ede6;
+  --color-card: #fffaf5;
+  --color-inset: #eee4e5;
+  --color-hover: #e6d9df;
+  --color-text: #403544;
+  --color-secondary: #6c5a6a;
+  --color-caption: #786776;
+  --color-accent: #886481;
+  --color-accent-soft: #9f7b971a;
+  --color-cream: #6b526d;
+  --color-cream-hover: #59415c;
+  --color-on-cream: #fff9f2;
+  --color-disabled: #e8dfe5;
+  --color-disabled-text: #817584;
+  --color-danger: #a23e55;
+  --border-subtle: #6b50651c;
+  --border-control: #6b506534;
+  --glass-bg: #fffaf5f2;
+  --shadow-floating: 0 16px 48px #684c621c;
+  --studio-edge: #6b506528;
+  --studio-highlight: inset 0 1px 0 #ffffffb3;
+  --palette-1: #fffaf5;
+  --palette-3: #786776;
+  --palette-9: #5e5060;
+  --palette-12: #403544;
+  --palette-13: #806087;
+  --palette-18: #403544;
+  --palette-19: #eee4e5;
+  --palette-20: #5f4c67;
+  --palette-21: #6c5a6a;
+  --palette-22: #ddd0df;
+  --palette-23: #d3bed2;
+  --palette-24: #6c5a6a;
+  --palette-25: #786776;
+  --palette-26: #fff8f2eb;
+  --palette-27: #6c5a6a;
+  --palette-28: #86648e;
+  --palette-29: #f4eae8;
+  --palette-30: #50404b;
+  --palette-34: #745c7b;
+  --palette-36: #786776;
+  --palette-37: #786776;
+  --palette-38: #886481;
+  --palette-40: #6b5045;
+  --palette-44: #fffaf5f5;
+  --palette-46: #50404b;
+  --palette-47: #786776;
+  --palette-51: #786776;
+  --palette-52: #886481;
+  --palette-56: #eee4e5;
+  --palette-57: #fffaf5;
+}
+html[data-theme="light"] body {
+  background: radial-gradient(ellipse at 85% 5%, #f6d9bb8c, transparent 65%), var(--color-page);
+  background-attachment: fixed;
+}
+html[data-theme="light"] .immersive .main,
+html[data-theme="light"] .immersive:is([data-view="shop"], [data-view="inventory"], [data-view="music"], [data-view="stats"]) .main {
+  --color-card: #fffaf5;
+  --color-inset: #eee4e5;
+  --color-hover: #e6d9df;
+  background: radial-gradient(ellipse at 95% 5%, #f5dab985, transparent 55%), linear-gradient(135deg, #f1edf5, #f6ede7);
+  scrollbar-color: #b6a0b8 transparent;
+}
+html[data-theme="light"] .immersive .player,
+html[data-theme="light"] .immersive:is([data-view="shop"], [data-view="inventory"], [data-view="music"], [data-view="stats"]) .player {
+  background: linear-gradient(145deg, #fffaf5, #eee4ed);
+  border-color: var(--border-control);
+}
+html[data-theme="light"] .immersive :is(.studio-navigation, .studio-wallet, .studio-settings, .room-tools, .scene-footer, .lighting-controls, .settings-card, .account-card, .track-panel, .playlist-panel, .product-card, .select-menu, .shop-favorites-entry) {
+  background: var(--color-card);
+  color: var(--color-text);
+  border-color: var(--border-control);
+}
+html[data-theme="light"] .immersive .studio-navigation button.active {
+  background: var(--color-accent-soft);
+  color: var(--color-text);
+}
+html[data-theme="light"] .immersive :is(.shop-search, .tabs button, .theme-option, .product-image) {
+  background: var(--color-inset);
+  border-color: var(--border-control);
+}
+html[data-theme="light"] .immersive :is(.shop-search input, .tabs button) { color: var(--color-text); }
+html[data-theme="light"] .immersive .tabs button.selected { background: var(--color-accent-soft); }
+html[data-theme="light"] .immersive .listening-period button[aria-pressed="true"] { color: var(--color-on-cream); }
+html[data-theme="light"] .immersive .room-heading h1 { text-shadow: 0 2px 16px #fff8ecb3; }
+
+.theme-options { display: flex; flex-wrap: wrap; gap: 12px; border: 0; margin: 12px 0 0; padding: 0; }
+.theme-legend { font-size: 13px; color: var(--color-secondary); margin-bottom: 8px; }
+.theme-option { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 10px 16px; border: 1px solid var(--border-control); border-radius: 12px; background: var(--color-inset); cursor: pointer; }
+.theme-option[data-selected="true"] { border-color: var(--color-accent); box-shadow: inset 0 0 0 1px var(--color-accent); }
+.theme-option input { accent-color: var(--color-accent); width: 16px; height: 16px; padding: 0; }
+.theme-option:focus-within { outline: var(--focus-ring); outline-offset: 3px; }

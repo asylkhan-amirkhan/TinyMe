@@ -1,0 +1,36 @@
+MyRoom weather recordings — CC0 1.0
+https://creativecommons.org/publicdomain/zero/1.0/
+
+rain-terrace.ogg (current rain ambience)
+Original: Summer Rain on Terrace / Pluie d'ete sur terrasse, sound #1019
+Author: Joseph SARDIN / BigSoundBank (LaSonotheque)
+Source: https://bigsoundbank.com/summer-rain-on-terrace-s1019.html
+Original audio: https://bigsoundbank.com/UPLOAD/bwf-en/1019.wav
+Original SHA-256: 66ed2534bdde6c399426e568ce8f82c680d7644d19a7fcd4b73cd3fb3a4a07c8
+License: CC0 1.0 / public domain, confirmed on source page 2026-10-25.
+Changes: excerpt 16-148 seconds, 6-second equal-power seam crossfade,
+DC removal, shared stereo gain, soft splash peak control and encoding headroom.
+Result: 126-second stereo loop, 48 kHz Ogg Vorbis. No synthesized rain layers.
+Prepared by scripts/prepare-rain.py. Playback adds gentle 65 Hz high-pass and
+9.5 kHz low-pass filtering, plus smooth volume fades.
+
+rain.ogg (legacy recording, retained for older cached clients)
+Original: Pluie sur flaques d'eau, sound #1290
+Author: Joseph SARDIN / LaSonotheque
+Source: https://lasonotheque.org/pluie-sur-flaques-d-eau-s1290.html
+Original audio: https://lasonotheque.org/UPLOAD/ogg/1290.ogg
+Changes: excerpt 5–65 seconds, 3-second equal-power seam crossfade,
+DC removal, level adjustment with soft peak limiting, Ogg Vorbis encoding.
+Result: 57-second loop.
+
+thunder.ogg
+Original: Tonnerre #10, sound #3183
+Authors: Joseph SARDIN & Axeline T. / LaSonotheque
+Source: https://lasonotheque.org/tonnerre-10-s3183.html
+Original audio: https://lasonotheque.org/UPLOAD/ogg/3183.ogg
+Changes: DC removal, short fade-in, 2-second fade-out, peak adjustment,
+Ogg Vorbis encoding. Playback uses mild rate, panning and distance filtering.
+
+All source pages designate these recordings CC0 / public domain.
+Legacy rain and thunder retrieved 2026-10-24; stereo rain retrieved 2026-10-25.
+The authors do not endorse this application.
