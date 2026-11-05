@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 import {
   UserRound,
   Home,
@@ -10,6 +11,7 @@ import {
   Coins,
   Cloud,
   HardDrive,
+  ShieldCheck,
 } from "lucide-react";
 import { useSessionClock } from "@/lib/use-session-clock";
 const links = [
@@ -32,6 +34,7 @@ export default function AppNavigation({
   status: string;
   cloud: boolean; activeMs: number; running: boolean;
 }) {
+  const router = useRouter();
   const displayMs=useSessionClock(activeMs,running,cloud);
   return (
     <header className="studio-header">
@@ -66,6 +69,15 @@ export default function AppNavigation({
             <span className="dock-tooltip" aria-hidden="true">{link.label}</span>
           </button>
         ))}
+        <button
+          type="button"
+          aria-label="Админ-панель"
+          onClick={() => router.push("/admin")}
+        >
+          <ShieldCheck size={16} aria-hidden="true" strokeWidth={1.75}/>
+          <span className="dock-label">Админ-панель</span>
+          <span className="dock-tooltip" aria-hidden="true">Админ-панель</span>
+        </button>
       </nav>
       <div className="studio-account">
         <span className="studio-sync" title={status} aria-label={status}>
