@@ -1,0 +1,34 @@
+/* Settings are a quiet control desk, scoped away from the room and player. */
+.immersive[data-view="settings"] .main .page-content {max-width:1080px;container-type:inline-size;container-name:settings;}
+.immersive[data-view="settings"] .main .page-heading {margin-bottom:32px;}
+.immersive[data-view="settings"] .main .settings-grid {grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:24px;align-items:start;}
+.immersive[data-view="settings"] .main .settings-card {min-width:0;padding:28px;border:1px solid var(--border-subtle);border-radius:24px;background:var(--color-card);box-shadow:none;}
+.immersive[data-view="settings"] .settings-card>svg {box-sizing:content-box;width:20px;height:20px;padding:12px;border-radius:16px;background:var(--color-accent-soft);color:var(--color-accent);margin-bottom:16px;}
+.immersive[data-view="settings"] .main .settings-card h2 {margin:0 0 12px;font-family:var(--font-sans);font-size:20px;font-weight:600;letter-spacing:-.35px;}
+.immersive[data-view="settings"] .settings-card p {color:var(--color-secondary);font-size:14px;line-height:1.65;margin:0 0 20px;}
+.immersive[data-view="settings"] .main .settings-card:first-child {grid-column:1/-1;display:grid;grid-template-columns:56px minmax(0,1fr) auto;column-gap:20px;align-items:center;background:linear-gradient(110deg,var(--color-inset),var(--color-card));}
+.immersive[data-view="settings"] .settings-card:first-child>svg {grid-row:1/3;margin:0;}
+.immersive[data-view="settings"] .main .settings-card:first-child h2 {grid-column:2;margin-bottom:4px;}
+.immersive[data-view="settings"] .settings-card:first-child p {grid-column:2;margin:0;}
+.immersive[data-view="settings"] .settings-card:first-child>.button {grid-column:3;grid-row:1/3;min-height:44px;}
+.immersive[data-view="settings"] .settings-card .volume-setting {margin:24px 0;padding:20px;background:var(--color-inset);border-radius:16px;color:var(--color-secondary);font-size:14px;}
+.immersive[data-view="settings"] .volume-setting strong {color:var(--color-text);font-size:20px;}
+.immersive[data-view="settings"] .settings-card .footnote {padding-top:20px;margin-bottom:0;border-top:1px solid var(--border-subtle);font-size:13px;line-height:1.8;}
+.immersive[data-view="settings"] .main .sound-setting-toggle {min-height:56px;border-radius:12px;gap:16px;}
+.immersive[data-view="settings"] .notification-sound-settings>.sound-setting-toggle {background:var(--color-accent-soft);border:1px solid var(--border-control);margin-bottom:20px;}
+.immersive[data-view="settings"] .main .sound-channel-list {gap:0;}
+.immersive[data-view="settings"] .main .sound-channel-row {border:0;border-top:1px solid var(--border-subtle);border-radius:0;background:transparent;}
+.immersive[data-view="settings"] .main .sound-channel-row .sound-setting-toggle {padding:20px 0 68px;align-items:center;}
+.immersive[data-view="settings"] .main .sound-channel-preview {left:0;bottom:16px;background:transparent;border-color:var(--border-control);border-radius:12px;}
+.immersive[data-view="settings"] .sound-channel-copy strong {font-size:15px;color:var(--color-text);}
+.immersive[data-view="settings"] .sound-channel-copy :is(span,small),.immersive[data-view="settings"] .sound-setting-note {font-size:13px;line-height:1.6;color:var(--color-secondary);}
+.immersive[data-view="settings"] .sound-setting-note {display:block;border-top:1px solid var(--border-subtle);padding-top:20px;margin-top:4px;}
+.immersive[data-view="settings"] .sound-switch-track {flex:0 0 40px;}
+.immersive[data-view="settings"] [aria-checked="true"] .sound-switch-track {background:var(--color-accent);}
+.immersive[data-view="settings"] [aria-checked="true"] .sound-switch-track i {background:var(--color-page);}
+@container settings (max-width:740px) {
+ .immersive[data-view="settings"] .main .settings-grid {grid-template-columns:minmax(0,1fr);gap:16px;}
+ .immersive[data-view="settings"] .main .settings-card {padding:20px;}
+ .immersive[data-view="settings"] .main .settings-card:first-child {grid-template-columns:44px minmax(0,1fr);gap:12px 16px;}
+ .immersive[data-view="settings"] .settings-card:first-child>.button {grid-column:1/-1;grid-row:3;justify-self:start;margin-top:8px;}
+}
