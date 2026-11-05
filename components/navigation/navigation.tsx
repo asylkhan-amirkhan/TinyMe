@@ -6,6 +6,7 @@ const links = [
   { href: "/room", label: "Моя комната", icon: "room" },
   { href: "/shop", label: "Магазин", icon: "shop" },
   { href: "/inventory", label: "Инвентарь", icon: "box" },
+  { href: "/admin", label: "Админ-панель", icon: "settings" },
 ];
 export function Navigation() {
   const pathname = usePathname();
