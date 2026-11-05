@@ -1,5 +1,10 @@
 import type { ReactNode } from "react";
 const paths: Record<string, ReactNode> = {
+  settings: <><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="currentColor"/><circle cx="15" cy="17" r="3" fill="currentColor"/></>,
+  music: <><path d="M9 18V5l11-2v13M9 9l11-2"/><ellipse cx="6" cy="18" rx="3" ry="2"/><ellipse cx="17" cy="16" rx="3" ry="2"/></>,
+  plus: <path d="M12 5v14M5 12h14"/>,
+  search: <><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></>,
+  upload: <><path d="M12 16V3m-5 5 5-5 5 5M4 15v6h16v-6"/></>,
   room: <><path d="m3 10 9-7 9 7v10H3Z"/><path d="M9 20v-7h6v7"/></>,
   shop: <><path d="M3 9h18l-2-5H5Z"/><path d="M4 9v11h16V9M9 20v-7h6v7"/></>,
   box: <><path d="m3 7 9-4 9 4-9 4Z"/><path d="M3 7v10l9 4 9-4V7M12 11v10M7 5l10 4"/></>,
