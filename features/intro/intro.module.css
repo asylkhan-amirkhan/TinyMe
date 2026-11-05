@@ -1,0 +1,82 @@
+.intro {
+  --intro-background: #51415e;
+  position: relative;
+  height: 100svh;
+  min-height: 460px;
+  overflow: hidden;
+  isolation: isolate;
+  color: #ffda9e;
+  background: radial-gradient(ellipse at 48% 65%, #765271 0%, #5c4565 40%, #4c405b 78%, #453c54 100%);
+}
+.intro::after { content: ""; position: absolute; z-index: 5; inset: 0; pointer-events: none; opacity: .13; background-image: url("/assets/intro-grain.svg"); mix-blend-mode: soft-light; }
+.corner { position: absolute; z-index: 4; top: 4%; left: 2.7%; font: bold clamp(8px, .7vw, 12px) "Courier New", monospace; letter-spacing: .15em; color: #f5bd92; }
+.scene { position: absolute; inset: 0; }
+.ambientFog { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.ambientFog::before, .ambientFog::after { content: ""; position: absolute; inset: -20%; background: radial-gradient(ellipse 62% 15% at 28% 44%, #f2e9e0a3 0%, #e6d5e26b 28%, #bcb5d336 53%, transparent 78%), radial-gradient(ellipse 55% 19% at 78% 74%, #e3e5f08f 0%, #dbc3d661 32%, #ada9c52b 58%, transparent 80%), radial-gradient(ellipse 38% 12% at 64% 28%, #f1dcd557 0%, transparent 75%); filter: blur(14px); animation: fogDrift 38s ease-in-out infinite alternate; }
+.ambientFog::after { opacity: .72; transform: scaleX(-1); background: radial-gradient(ellipse 58% 13% at 34% 59%, #f1eee68c 0%, #c7c4df61 31%, #d4b9c82b 57%, transparent 80%), radial-gradient(ellipse 46% 18% at 85% 35%, #e4dae966 0%, #d7c8e036 45%, transparent 80%); animation-delay: -19s; animation-duration: 49s; }
+@keyframes fogDrift { from { translate: -4% 1%; } to { translate: 5% -2%; } }
+.ornaments { position: absolute; z-index: 3; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.mechanism { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; mask-image: radial-gradient(ellipse 31% 58% at 50% 76%, transparent 15%, #0008 66%, #000 100%); }
+.farGears { --gear-0: #52405b; --gear-1: #604663; --gear-2: #6b4c68; --gear-3: #7a536d; --gear-4: #83596f; opacity: .65; }
+.middleGears { --gear-0: #63475f; --gear-1: #84566e; --gear-2: #a66b7a; --gear-3: #bd7b81; --gear-4: #d48f88; opacity: .82; }
+.nearGears { --gear-0: #a56a7b; --gear-1: #cd8b8b; --gear-2: #e7a18f; --gear-3: #f7bc94; --gear-4: #ffda9c; }
+.gear { animation: turn 180s linear infinite; }
+.title { position: absolute; z-index: 2; pointer-events: none; width: 56.5vw; height: 110svh; left: 48%; top: 20svh; margin: 0; transform: translateX(-50%); }
+.title svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.titleGlyph { font-family: Georgia, "Times New Roman", serif; font-size: 29px; font-weight: bold; fill: #ffcf96; stroke: #f7bd8f; stroke-width: .25px; paint-order: stroke fill; }
+.letter { animation: letterFloat 4s ease-in-out infinite; filter: drop-shadow(0 1px 0 #aa7480); }
+.headLink { position: absolute; z-index: 1; width: 53vw; height: 110svh; left: 48%; top: 20svh; transform: translateX(-50%); }
+.head { display: block; width: 100%; height: 100%; image-rendering: pixelated; filter: drop-shadow(0 0 14px #f7b08d18); }
+.invitation { position: absolute; z-index: 4; width: 25%; left: 49%; top: 48%; transform: translateX(-50%); display: flex; align-items: center; flex-direction: column; }
+.sprout { position: absolute; z-index: 3; pointer-events: none; left: 49.25%; top: 9svh; width: clamp(42px, 4.8vw, 84px); height: 6.5svh; transform: translateX(-50%); }
+.hourglass { width: clamp(58px, 5vw, 96px); height: 11svh; transform: translateY(2.5svh) scale(.4); transform-origin: center; overflow: visible; filter: drop-shadow(0 3px 0 #392d4740); }
+.prompt { position: relative; margin-top: 2.5svh; width: 100%; min-height: 5svh; display: flex; justify-content: center; align-items: center; padding: 8px 12px; color: #ffdda7; opacity: .6; font: clamp(12px, 1.15vw, 20px)/1.3 Georgia, "Times New Roman", serif; text-align: center; letter-spacing: .04em; }
+.enterLink { position: absolute; z-index: 10; inset: 0; cursor: pointer; }
+.enterLink:focus-visible { outline: 2px solid #ffe6b4; outline-offset: -12px; }
+.caption { position: absolute; z-index: 4; bottom: 4%; left: 2%; display: flex; align-items: center; gap: 12px; margin: 0; font: bold clamp(8px, .75vw, 13px)/1.6 "Courier New", monospace; letter-spacing: .15em; color: #f5c598; }
+.caption > span:first-child { display: grid; place-items: center; width: 45px; height: 45px; border: 1px solid #efbb8b; border-radius: 50%; font: 27px Georgia, serif; }
+.captionText { display: block; }
+.srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+@keyframes turn { to { transform: rotate(360deg); } }
+@keyframes letterFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@media (max-width: 600px) {
+  .corner { top: 25px; left: 24px; font-size: 8px; }
+  .title, .headLink { top: 22svh; width: 108vw; height: 100svh; left: 46%; }
+  .headLink { width: 101vw; }
+  .titleGlyph { font-size: 29px; }
+  .invitation { top: 48%; left: 48%; width: 43%; }
+  .sprout { top: 12svh; left: 48.5%; width: 48px; height: 6svh; }
+  .prompt { font-size: 11px; padding: 8px 6px; margin-top: 2.5svh; }
+  .hourglass { height: 9svh; transform: translateY(1.5svh) scale(.4); }
+  .caption { bottom: 25px; left: 24px; font-size: 7px; gap: 8px; }
+  .caption > span:first-child { width: 28px; height: 28px; font-size: 18px; }
+  .mechanism { mask-image: radial-gradient(ellipse 55% 60% at 50% 76%, transparent 15%, #0008 70%, #000 100%); }
+}
+@media (prefers-reduced-motion: reduce) { .gear, .letter, .ambientFog::before, .ambientFog::after { animation: none; } }
+
+/* Camera advances into the hollow; the curtain survives the route change. */
+.journey[data-phase="entering"] .scene { animation: enterHead 1350ms cubic-bezier(.6, 0, .3, 1) forwards; transform-origin: 49% 57%; }
+.journey[data-phase="entering"] .corner,
+.journey[data-phase="entering"] .caption,
+.journey[data-phase="entering"] .ornaments { transition: opacity 450ms ease; opacity: 0; }
+.journey[data-phase="entering"] .invitation { animation: invitationFade 400ms ease forwards; }
+.entryDarkness { position: fixed; z-index: 100; inset: 0; overflow: hidden; background: #110c18; animation: enterDarkness 1350ms ease forwards; cursor: progress; }
+.entryMist { position: absolute; inset: -25%; background: radial-gradient(ellipse at 30% 40%, #9a7aab40, transparent 55%), radial-gradient(ellipse at 75% 65%, #86678d40, transparent 50%); filter: blur(24px); }
+.journey[data-phase="revealing"] .entryDarkness { animation: leaveDarkness 1600ms ease-in-out forwards; }
+.journey[data-phase="revealing"] .entryMist { animation: scatterMist 1600ms ease-out forwards; }
+@keyframes enterHead {
+  0% { transform: scale(1); filter: brightness(1); }
+  55% { filter: brightness(.75); }
+  100% { transform: scale(4.5); filter: brightness(.15); }
+}
+@keyframes invitationFade { to { opacity: 0; } }
+@keyframes enterDarkness { 0%, 40% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes leaveDarkness { 0%, 12% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes scatterMist { from { transform: scale(1); opacity: .8; } to { transform: scale(1.6) translateY(-5%); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .journey[data-phase="entering"] .scene,
+  .journey[data-phase="entering"] .invitation,
+  .entryDarkness,
+  .journey[data-phase="revealing"] .entryDarkness,
+  .journey[data-phase="revealing"] .entryMist { animation-duration: 1ms; }
+}

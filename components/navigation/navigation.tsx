@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "@/components/ui/icon";
 const links = [
-  { href: "/", label: "Моя комната", icon: "room" },
+  { href: "/room", label: "Моя комната", icon: "room" },
   { href: "/shop", label: "Магазин", icon: "shop" },
   { href: "/inventory", label: "Инвентарь", icon: "box" },
 ];
