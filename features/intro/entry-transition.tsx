@@ -28,7 +28,7 @@ export function EntryTransition({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   useEffect(() => {
-    if (phase !== "entering" || pathname === "/intro") return;
+    if (phase !== "entering" || pathname === "/" || pathname === "/intro") return;
     if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
     const reveal = setTimeout(() => setPhase("revealing"), 180);
     return () => clearTimeout(reveal);

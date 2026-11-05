@@ -2,8 +2,8 @@
 import { useEffect, useState } from 'react';
 import { resolveDaylight, validLightingMode, type LightingMode } from '@/domain/lighting';
 export function useRoomLighting() {
- const [mode,setMode]=useState<LightingMode>('auto');
- const [daylight,setDaylight]=useState(0);
+ const [mode,setMode]=useState<LightingMode>('evening');
+ const [daylight,setDaylight]=useState(.28);
  useEffect(()=>{
   try {const saved=localStorage.getItem('myroom:lighting');if(validLightingMode(saved))setMode(saved);}catch{}
  },[]);

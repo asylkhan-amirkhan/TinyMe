@@ -43,7 +43,7 @@ export default function Welcome(){
   if(screen==='room' && user)return <MyRoom/>;
   return <div className={`welcome ${screen==='landing'?'landing-redesign':''}`}>
     {screen==='landing'&&<a className="landing-skip" href="#landing-title">К содержимому</a>}
-    <header className="welcome-header"><a className="studio-brand" href="/" onClick={e=>{e.preventDefault();setScreen('landing');}} aria-label="MyRoom — главная"><span className="door-mark" aria-hidden="true"><i/><b/></span><span>myroom<span className="brand-period">.</span></span></a>
+    <header className="welcome-header"><a className="studio-brand" href="/" onClick={e=>{e.preventDefault();setScreen('landing');}} aria-label="tiny me — главная"><span className="door-mark" aria-hidden="true"><i/><b/></span><span>tiny me<span className="brand-period">.</span></span></a>
       {screen==='landing'?<><nav aria-label="О приложении"><a href="#possibilities">Возможности</a><a href="#how-it-works">Как это работает</a><a href="#questions">Вопросы</a></nav><button className="button secondary" disabled={!ready} onClick={()=>enter('login')}>{user?'В мою комнату':'Войти'}<ArrowRight size={16}/></button></>:<button className="button secondary" onClick={()=>setScreen('landing')}><ArrowLeft size={16}/>На главную</button>}
     </header>
     {screen==='landing'?<main>
@@ -55,13 +55,13 @@ export default function Welcome(){
       </div></section>
       <section className="welcome-how" id="how-it-works"><div><span className="welcome-kicker">ОТ ПЕРВОГО ВХОДА ДО УЮТА</span><h2>Здесь всё просто.</h2><p>Одна комната. Много способов сделать её своей.</p><button className="button primary" disabled={!ready} onClick={()=>enter('register')}>Начать<ArrowRight size={16}/></button></div><ol><li><span>01</span><div><h3>Создай аккаунт</h3><p>Войди, чтобы сохранять комнату, покупки и музыку между устройствами.</p></div></li><li><span>02</span><div><h3>Выбери, что тебе нравится</h3><p>Расставь мебель, включи музыку и подбери атмосферу. Настройки всегда можно изменить.</p></div></li><li><span>03</span><div><h3>Побудь в своём пространстве</h3><p>Каждая полная минута запущенного таймера приносит 1 монету на новые вещи. Без суточного лимита.</p></div></li></ol></section>
       <section className="welcome-faq" id="questions"><span className="welcome-kicker">ПЕРЕД ТЕМ КАК ВОЙТИ</span><h2>Несколько простых ответов.</h2>{[
-        ['Это игра?','MyRoom — личная интерактивная комната. Здесь нет квестов, уровней и обязательных задач. Ты выбираешь, как проводить время.'],
+        ['Это игра?','tiny me — личная интерактивная комната. Здесь нет квестов, уровней и обязательных задач. Ты выбираешь, как проводить время.'],
         ['Можно слушать свою музыку?','Да. Загружай MP3 и WAV, собирай плейлисты и переключайся на другие вкладки. Воспроизведение работает, пока браузер позволяет странице оставаться активной.'],
         ['Где сохраняются мои вещи?','После входа комната, покупки и монеты сохраняются в аккаунте. Статистика музыки и часть настроек остаются в браузере. Старые гостевые данные автоматически не переносятся.'],
         ['Нужно что-то устанавливать?','Нет. MyRoom работает прямо в браузере. Для музыки сначала нажми Play, а для работы таймера оставляй страницу открытой.']
       ].map(([q,a])=><details key={q}><summary>{q}<Plus size={18}/></summary><p>{a}</p></details>)}</section>
       <section className="welcome-end"><Moon size={24}/><h2>Твой тихий вечер начинается здесь.</h2><button className="button primary" disabled={!ready} onClick={()=>enter('register')}>{user?'Вернуться в комнату':'Создать аккаунт'}<ArrowRight size={16}/></button><span><Check size={14}/>Настраивай под себя, меняй когда захочется.</span></section>
     </main>:<main className="welcome-auth"><h1 ref={heading} tabIndex={-1}>{screen==='recovery'?'Восстановление доступа.':screen==='register'?'Твоё место начинается здесь.':'С возвращением.'}</h1>{authError&&<p role="alert">Не удалось завершить вход. Попробуй снова или запроси новое письмо.</p>}{!ready?<p role="status">Проверяем вход…</p>:<AccountPanel key={`${screen}:${user?.id??'guest'}`} user={screen==='recovery'?user:null} recovery={screen==='recovery'} onRecovered={()=>{setScreen(user?'room':'login');window.history.replaceState(null,'','/');}} initialMode={screen==='register'?'register':'login'} balance={0} items={0} activeMs={0}/>}</main>}
-    <footer className="welcome-footer"><span>myroom.</span><p>Меньше шума. Больше своего.</p><span>Личное пространство в браузере</span></footer>
+    <footer className="welcome-footer"><span>tiny me.</span><p>Меньше шума. Больше своего.</p><span>Личное пространство в браузере</span></footer>
   </div>;
 }

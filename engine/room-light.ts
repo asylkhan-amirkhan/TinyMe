@@ -44,7 +44,8 @@ export function windowExposure(position:Vec3) {
 }
 export function lightAt(position:Vec3,normal:Vec3,light:RoomLight,id:string):Vec3 {
   const hemisphere=.78+.22*Math.max(0,normal[2])+.06*normal[0]-.08*normal[1];
-  const ambient=(.19+light.daylight*(light.overcast?.43:.35))*hemisphere;
+  const sunsetBounce=.1*Math.max(0,1-Math.abs(light.daylight-.28)/.28);
+  const ambient=(.19+sunsetBounce+light.daylight*(light.overcast?.43:.35))*hemisphere;
   const brightness:Vec3=[ambient*.92,ambient*.97,ambient*1.13];
   const sun:Vec3=[-SUN_TRAVEL[0]*LIGHT_UNIT,-SUN_TRAVEL[1]*LIGHT_UNIT,1];
   const length=Math.hypot(...sun);

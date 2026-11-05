@@ -1,6 +1,7 @@
 "use client";
 import dynamic from "next/dynamic";
 import packageInfo from "../package.json";
+import ThemeSelector from "./ThemeSelector";
 import { useEffect, useState, useCallback, useLayoutEffect, useRef, useMemo } from "react";
 import {
   Search,
@@ -790,6 +791,7 @@ export default function MyRoom() {
                 </div>
               </div>
               <div className="settings-grid">
+                <ThemeSelector />
                 <section className="settings-card">
                   <Cloud size={16} strokeWidth={1.75}/>
                   <h2>Твой аккаунт</h2>
@@ -881,7 +883,7 @@ export default function MyRoom() {
           <strong>{music.current?.title ?? "Выбери музыку"}</strong>
           <span>
             {music.current?.builtin
-              ? "MyRoom · спокойная мелодия"
+              ? "tiny me · спокойная мелодия"
               : "Моя коллекция"}
           </span>
         </div>

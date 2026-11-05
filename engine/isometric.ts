@@ -12,7 +12,7 @@ import { drawResident } from './resident-art';
 import { eveningBackdrop, eveningDesk, livingClock } from './evening-atmosphere';
 import { defaultAccentLights, type AccentLights } from '../domain/accent-lights';
 import { materialColor } from '../domain/furniture-color';
-import { appearanceOf, defaultAppearance, type Appearance } from '../domain/appearance';
+import { appearanceOf, type Appearance } from '../domain/appearance';
 import { studioLayout } from '@/domain/studio-layout';
 import {gamingMiniature,gamingPoster} from './gaming-art';
 import { roomLight, litColor, windowExposure, furnitureHeight, SUN_TRAVEL, LIGHT_UNIT, type RoomLight, type Vec3 } from './room-light';
@@ -100,7 +100,6 @@ function line(
 }
 function room(g: CanvasRenderingContext2D, appearance?: Appearance, daylight = 0, raining = false, season:Season='summer', demoSky?: 'morning'|'evening'|'night') {
   const colors = appearanceOf(appearance);
-  const custom = !!appearance && Object.keys(defaultAppearance).some(key => colors[key as keyof Appearance] !== defaultAppearance[key as keyof Appearance]);
   const p = project;
   // Ambient bounce and the thick floating floor slab.
   g.save();
@@ -111,12 +110,12 @@ function room(g: CanvasRenderingContext2D, appearance?: Appearance, daylight = 0
     "#02020bb3",
   );
   g.restore();
-  polygon(g, [p(0, 16), p(24, 16), p(24, 16, -21), p(0, 16, -21)], (custom ? shade(colors.floor, -22) : "#14203e"));
-  polygon(g, [p(24, 0), p(24, 16), p(24, 16, -21), p(24, 0, -21)], (custom ? shade(colors.floor, -12) : "#262246"));
+  polygon(g, [p(0, 16), p(24, 16), p(24, 16, -21), p(0, 16, -21)], shade(colors.floor, -22));
+  polygon(g, [p(24, 0), p(24, 16), p(24, 16, -21), p(24, 0, -21)], shade(colors.floor, -12));
   const floor = g.createLinearGradient(350, 300, 670, 780);
-  floor.addColorStop(0, (custom ? shade(colors.floor, 5) : "#273550"));
-  floor.addColorStop(0.6, (custom ? colors.floor : "#293249"));
-  floor.addColorStop(1, (custom ? shade(colors.floor, -15) : "#17263b"));
+  floor.addColorStop(0, shade(colors.floor, 5));
+  floor.addColorStop(0.6, colors.floor);
+  floor.addColorStop(1, shade(colors.floor, -15));
   polygon(g, [p(0, 0), p(24, 0), p(24, 16), p(0, 16)], floor);
   // Wood planks: subtle grain follows the room, not the screen.
   for (let y = 0; y < 16; y++) {
@@ -131,38 +130,38 @@ function room(g: CanvasRenderingContext2D, appearance?: Appearance, daylight = 0
     }
   }
   const left = g.createLinearGradient(60, 220, 500, 350);
-  left.addColorStop(0, (custom ? shade(colors.wallLeft, -28) : "#27396e"));
-  left.addColorStop(1, (custom ? colors.wallLeft : "#345995"));
+  left.addColorStop(0, shade(colors.wallLeft, -28));
+  left.addColorStop(1, colors.wallLeft);
   const right = g.createLinearGradient(440, 70, 940, 520);
-  right.addColorStop(0, (custom ? shade(colors.wallRight, -20) : "#995784"));
-  right.addColorStop(0.55, (custom ? colors.wallRight : "#bb6a93"));
-  right.addColorStop(1, (custom ? shade(colors.wallRight, -55) : "#53446f"));
+  right.addColorStop(0, shade(colors.wallRight, -20));
+  right.addColorStop(0.55, colors.wallRight);
+  right.addColorStop(1, shade(colors.wallRight, -55));
   polygon(g, [p(0, 16), p(0, 0), p(0, 0, 245), p(0, 16, 245)], left);
   polygon(g, [p(0, 0), p(24, 0), p(24, 0, 245), p(0, 0, 245)], right);
   polygon(
     g,
     [p(-0.5, 16, 245), p(-0.5, -0.5, 245), p(0, 0, 245), p(0, 16, 245)],
-    (custom ? shade(colors.wallLeft, 26) : "#bf709e"),
+    shade(colors.wallLeft, 26),
   );
   polygon(
     g,
     [p(-0.5, -0.5, 245), p(24, -0.5, 245), p(24, 0, 245), p(0, 0, 245)],
-    (custom ? shade(colors.wallRight, 35) : "#e09ab8"),
+    shade(colors.wallRight, 35),
   );
   polygon(
     g,
     [p(0, 16), p(-0.5, 16), p(-0.5, 16, 245), p(0, 16, 245)],
-    (custom ? shade(colors.wallLeft, -10) : "#8c568a"),
+    shade(colors.wallLeft, -10),
   );
   polygon(
     g,
     [p(24, 0), p(24, -0.5), p(24, -0.5, 245), p(24, 0, 245)],
-    (custom ? shade(colors.wallRight, -10) : "#ab7196"),
+    shade(colors.wallRight, -10),
   );
-  line(g, p(0, 16, 9), p(0, 0, 9), (custom ? shade(colors.wallLeft, -40) : "#1d2351"), 9);
-  line(g, p(0, 0, 9), p(24, 0, 9), (custom ? shade(colors.wallRight, -38) : "#75476f"), 9);
-  line(g, p(0, 16, 229), p(0, 0, 229), (custom ? colors.wallLeft + "80" : "#f4a2dc80"), 3);
-  line(g, p(0, 0, 229), p(24, 0, 229), (custom ? colors.wallRight + "b0" : "#ffc3dfb0"), 3);
+  line(g, p(0, 16, 9), p(0, 0, 9), shade(colors.wallLeft, -40), 9);
+  line(g, p(0, 0, 9), p(24, 0, 9), shade(colors.wallRight, -38), 9);
+  line(g, p(0, 16, 229), p(0, 0, 229), colors.wallLeft + "80", 3);
+  line(g, p(0, 0, 229), p(24, 0, 229), colors.wallRight + "b0", 3);
   // Recessed panoramic window and a distant city, each pane on the wall plane.
   polygon(
     g,
@@ -177,9 +176,9 @@ function room(g: CanvasRenderingContext2D, appearance?: Appearance, daylight = 0
   const sky = g.createLinearGradient(750, 230, 750, 490);
   const skyDay = demoSky ? demoSky!=='night' : !!daylight;
   const dusk = demoSky==='evening';
-  sky.addColorStop(0, dusk ? (raining ? "#68647d" : "#80647e") : raining ? (skyDay ? "#637b91" : "#101a2b") : skyDay ? seasonPalette[season].sky : "#11162f");
-  sky.addColorStop(0.52, dusk ? (raining ? "#b094a1" : "#e6a28d") : raining ? (skyDay ? "#a1b6c4" : "#26344a") : skyDay ? "#c8e7ef" : "#293354");
-  sky.addColorStop(1, dusk ? "#f1c7a4" : raining ? (skyDay ? "#cad4d8" : "#536478") : skyDay ? seasonPalette[season].horizon : ({spring:"#645575",summer:"#64688c",autumn:"#736073",winter:"#63798f"}[season]));
+  sky.addColorStop(0, dusk ? (raining ? "#68647d" : "#b58ba0") : raining ? (skyDay ? "#637b91" : "#101a2b") : skyDay ? seasonPalette[season].sky : "#11162f");
+  sky.addColorStop(0.52, dusk ? (raining ? "#b094a1" : "#f1b59a") : raining ? (skyDay ? "#a1b6c4" : "#26344a") : skyDay ? "#c8e7ef" : "#293354");
+  sky.addColorStop(1, dusk ? "#ffe2b8" : raining ? (skyDay ? "#cad4d8" : "#536478") : skyDay ? seasonPalette[season].horizon : ({spring:"#645575",summer:"#64688c",autumn:"#736073",winter:"#63798f"}[season]));
   polygon(
     g,
     [

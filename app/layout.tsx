@@ -22,10 +22,12 @@ import "./landing-hero.css";
 import "./room-details.css";
 import "./settings-studio.css";
 import "./evening-studio.css";
+import "./sunset.css";
+import "./themes.css";
 const inter = Inter({subsets:["latin","cyrillic"],variable:"--font-inter",display:"swap"});
 const cormorant = Cormorant_Garamond({subsets:["latin","cyrillic"],weight:["400","500","600"],variable:"--font-cormorant",display:"swap"});
 export const metadata: Metadata = {
-  title: "MyRoom — твоё тихое место",
+  title: "tiny me — твоё тихое место",
   description:
     "Личная пиксельная комната, любимая музыка и немного времени для себя.",
 };
@@ -33,8 +35,11 @@ export default function Layout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ru" className={`${inter.variable} ${cormorant.variable}`}>
-      <body><EntryTransition>{children}</EntryTransition></body>
+    <html lang="ru" suppressHydrationWarning className={`${inter.variable} ${cormorant.variable}`}>
+      <body>
+        <script dangerouslySetInnerHTML={{ __html: 'try{document.documentElement.dataset.theme=localStorage.getItem("tinyme:theme")==="light"?"light":"dark"}catch{document.documentElement.dataset.theme="dark"}' }} />
+        <EntryTransition>{children}</EntryTransition>
+      </body>
     </html>
   );
 }

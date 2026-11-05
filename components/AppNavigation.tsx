@@ -38,7 +38,7 @@ export default function AppNavigation({
       <a
         href="#"
         className="studio-brand"
-        aria-label="MyRoom — моя комната"
+        aria-label="tiny me — моя комната"
         onClick={(e) => {
           e.preventDefault();
           onNavigate("room");
@@ -49,7 +49,7 @@ export default function AppNavigation({
           <b />
         </span>
         <span>
-          myroom<span className="brand-period">.</span>
+          tiny me<span className="brand-period">.</span>
         </span>
       </a>
       <nav className="studio-navigation" aria-label="Основное меню">
