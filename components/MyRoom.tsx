@@ -69,6 +69,10 @@ import MusicLibrary from "./MusicLibrary";
 import RoomStage from "./RoomStage";
 import AppNavigation from "./AppNavigation";
 import AccountPanel from "./AccountPanel";
+import GrowthPanel from './GrowthPanel';
+import { useGrowth } from '@/lib/use-growth';
+import { growthCategories, growthMastery, type GrowthSkill } from '@/domain/growth';
+import { residentTargets } from '@/domain/resident';
 import SessionStrip from "./SessionStrip";
 import NotificationCenter from "./NotificationCenter";
 import { useNotifications } from "@/lib/use-notifications";
@@ -89,11 +93,18 @@ function mm(seconds: number) {
 }
 export default function MyRoom() {
   const r = useRoom();
+  const growth = useGrowth(r.user?.id, r.loaded);
   const moves = usePlacementHistory(r.room.items, r.user?.id ?? 'guest', r.command, r.setNotice);
   const notificationSound = useNotificationSound();
   const notifications = useNotifications({ scope: r.user?.id ?? "guest", loaded: r.loaded, activeMs: r.room.activeMs }, r.notice, notificationSound.play);
   const motion = useRoomMotion();
   const resident = useRoomResident(r.user?.id ?? 'guest');
+  const practiceGrowth = (skill: GrowthSkill, level: number) => {
+    r.setNotice(`${skill.name}: результат сохранён. ${growthMastery(level)}.`);
+    if (!motion.enabled || resident.mode === 'hidden' || resident.mode === 'paused') return;
+    const action = growthCategories[skill.category].action;
+    resident.send(action === 'walk' || residentTargets(r.room.items, action).length ? action : 'walk');
+  };
   const [wardrobe, setWardrobe] = useState(false);
   const lighting = useRoomLighting();
   const accentLights = useAccentLights(r.setNotice);
@@ -630,6 +641,7 @@ export default function MyRoom() {
 
       <main id="main-content" tabIndex={-1} className="main pb-32 font-sans" aria-hidden={view === "room"} inert={view === "room"}>
         <div className="page-content">
+          {view === 'growth' && <GrowthPanel key={r.user?.id ?? 'guest'} growth={growth} onRoom={() => navigate('room')} onPractice={practiceGrowth}/>}
           {view === "shop" && (
             <>
               <div className="page-heading">
