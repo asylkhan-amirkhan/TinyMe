@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { createElement, type ReactNode } from "react";
 import { EntryTransition } from "@/features/intro/entry-transition";
+// @ts-ignore -- Next.js handles global CSS imports at build time.
 import "./globals.css";
 
 export const metadata: Metadata = {
