@@ -1,13 +1,14 @@
 import { dimensions, productOf, type Item } from './model';
 import { advanceResidentPose, angleDelta, residentPose, WALK_SPEED, type ResidentPose } from './resident-motion';
+import { activityDescriptions, masteryNames, type SkillActivity } from './skill-growth';
 
 export type ResidentMode = 'auto' | 'direct' | 'paused' | 'hidden';
-export type ResidentAction = 'walk' | 'work' | 'read' | 'water' | 'rest' | 'listen';
+export type ResidentAction = 'walk' | 'work' | 'read' | 'water' | 'rest' | 'listen' | 'practice';
 export type Cell = { x: number; y: number };
 export type ResidentTarget = Cell & { action: ResidentAction; itemId?: string; seatId?: string; seatHeight?: number; workReach?:number; facing: number; seated: boolean };
 export type Resident = Cell & { facing: number; action: ResidentAction | 'idle'; path: Cell[]; target: ResidentTarget | null;
-  elapsed: number; time: number; cycle: number; seated: boolean; visible: boolean; pose?: ResidentPose };
-export type ResidentCommand = { key: number; action?: ResidentAction; itemId?: string; cell?: Cell };
+  elapsed: number; time: number; cycle: number; seated: boolean; visible: boolean; pose?: ResidentPose; activity?: SkillActivity };
+export type ResidentCommand = { key: number; action?: ResidentAction; itemId?: string; cell?: Cell; skillId?: string };
 
 /** Compare floor footprints before using diagonal depth for overlapping bounds. */
 export function residentBehindFurniture(position:Cell,item:Item) {
@@ -136,11 +137,12 @@ export function reconcileResident(current: Resident, items: Item[]): Resident {
   if (!p) return { ...current, visible: false, path: [], target: null, action: 'idle', seated: false, pose: undefined };
   // A changed layout invalidates all routes and seating, including rotated chairs.
   const free = nearestFree(p, residentBlocked(items));
-  return { ...current, ...(free ?? p), visible: true, path: [], target: null, action: 'idle', seated: false, pose: undefined, elapsed: targetValid ? 1 : 0 };
+  return { ...current, ...(free ?? p), visible: true, path: [], target: null, action: 'idle', seated: false, pose: undefined, activity: undefined, elapsed: targetValid ? 1 : 0 };
 }
 
 export function commandResident(current: Resident, items: Item[], command: Omit<ResidentCommand, 'key'>): Resident | null {
   if (!current.visible) return null;
+  current = { ...current, activity: undefined };
   let targets = command.cell ? [{ ...command.cell, action: 'walk' as const, facing: current.facing, seated: false }] : residentTargets(items, command.action, command.itemId);
   if (command.action === 'walk' && !command.cell) {
     targets = Array.from({ length: W * H }, (_, n) => ({ ...center(n), action: 'walk' as const, facing: current.facing, seated: false }))
@@ -166,7 +168,27 @@ export function commandResident(current: Resident, items: Item[], command: Omit<
   }
   return null;
 }
-export function advanceResident(current: Resident, deltaMs: number, items: Item[], automatic: boolean): Resident {
+/** Use furniture when reachable, otherwise a portable tool in a free cell. */
+export function commandSkillResident(current: Resident, items: Item[], activity: SkillActivity, still = false): Resident | null {
+  if (!current.visible) return null;
+  const action = activity.behavior === 'study' ? 'read' : activity.behavior === 'desk' ? 'work' : 'practice';
+  const atFurniture = !still && action !== 'practice' ? commandResident(current, items, { action }) : null;
+  if (atFurniture) return { ...atFurniture, activity };
+  const free = nearestFree(current, residentBlocked(items));
+  if (!free) return null;
+  // Static previews are grounded on a safe cell and remain distinct without time.
+  const base = still ? { ...current, ...free } : current;
+  const plan = commandResident(base, items, { cell: free });
+  if (!plan) return null;
+  const target: ResidentTarget = { ...free, action: 'practice', facing: Math.PI / 4, seated: false };
+  return { ...plan, activity, target, action: plan.path.length && !still ? 'walk' : 'practice', facing: target.facing, seated: false, pose: still ? undefined : plan.pose, elapsed: 0 };
+}
+export function syncResidentSkills(current: Resident, activities: SkillActivity[], items: Item[]): Resident {
+  if (!current.activity) return current;
+  const updated = activities.find(a => a.skillId === current.activity!.skillId);
+  return updated ? { ...current, activity: updated } : reconcileResident(current, items);
+}
+export function advanceResident(current: Resident, deltaMs: number, items: Item[], automatic: boolean, skills?: SkillActivity[]): Resident {
   if (!Number.isFinite(deltaMs) || deltaMs <= 0) return current;
   const duration = Math.min(deltaMs, 150) / 1000;
   let r = { ...current, path: [...current.path], pose: { ...residentPose(current) } };
@@ -207,6 +229,14 @@ export function advanceResident(current: Resident, deltaMs: number, items: Item[
     r.pose = advanceResidentPose(r.pose, r, dt, travelled, speed);
   }
   if (automatic && !r.path.length && r.elapsed > (r.action === 'idle' ? 4 : 16)) {
+    if (skills !== undefined) {
+      const offset = r.activity ? skills.findIndex(s => s.skillId === r.activity!.skillId) + 1 : r.cycle;
+      for (let n = 0; n < skills.length; n++) {
+        const plan = commandSkillResident(r, items, skills[(offset + n) % skills.length]);
+        if (plan) return plan;
+      }
+      return commandResident(r, items, { action: r.cycle % 2 ? 'rest' : 'walk' }) ?? { ...r, elapsed: 0 };
+    }
     const activities: ResidentAction[] = ['work', 'read', 'water', 'rest', 'listen', 'walk'];
     const nextActivity = r.action === 'idle' ? r.cycle % activities.length : (activities.indexOf(r.action) + 1) % activities.length;
     for (let n = 0; n < activities.length; n++) {
@@ -220,5 +250,6 @@ export function advanceResident(current: Resident, deltaMs: number, items: Item[
 export function residentStatus(r: Resident): string {
   if (!r.visible) return 'Нужно свободное место на полу';
   if (r.path.length) return 'Идёт к месту';
-  return { idle: 'Осматривается', walk: 'Прогуливается', work: 'Работает за компьютером', read: 'Читает книгу', water: 'Поливает растение', rest: 'Отдыхает', listen: 'Слушает музыку' }[r.action];
+  if (r.activity) return `${r.activity.name} · ${masteryNames[r.activity.mastery]} · ${activityDescriptions[r.activity.behavior][r.activity.mastery]}`;
+  return { idle: 'Осматривается', walk: 'Прогуливается', work: 'Работает за компьютером', read: 'Читает книгу', water: 'Поливает растение', rest: 'Отдыхает', listen: 'Слушает музыку', practice: 'Занимается' }[r.action];
 }

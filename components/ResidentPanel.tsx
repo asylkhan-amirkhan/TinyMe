@@ -4,8 +4,11 @@ import type { Item } from '@/domain/model';
 import { residentTargets, type ResidentAction, type ResidentMode } from '@/domain/resident';
 import './resident.css';
 import Select from './Select';
+import { masteryNames, type SkillActivity, type SkillReward } from '@/domain/skill-growth';
 
 type Props = {
+  skills?: SkillActivity[]; rewards?: SkillReward[];
+  onSkill?: (id:string)=>void; onRewards?:()=>void;
   items: Item[]; mode: ResidentMode; status: string; disabled: boolean;
   motion: boolean; reduced: boolean; onEnableMotion: () => void;
   onMode: (mode: ResidentMode) => void; onAction: (action: ResidentAction) => void;
@@ -21,8 +24,8 @@ const activities = [
 ] as const;
 export default function ResidentPanel(p: Props) {
   const status = p.mode === 'hidden' ? 'Житель скрыт' : p.disabled ? 'Ждёт, пока закончишь обустройство' :
-    p.mode === 'paused' ? 'На паузе' : !p.motion ? 'Движение выключено' : p.status;
-  return <details className="resident-panel" aria-label="Житель комнаты">
+    p.mode === 'paused' ? 'На паузе' : !p.motion ? `${p.status} · без анимации` : p.status;
+  return <details className="resident-panel resident-growth-panel" aria-label="Житель комнаты">
     <summary className="resident-heading">
       <div className="resident-avatar" aria-hidden="true"><UserRound size={22} strokeWidth={1.75}/></div>
       <div className="resident-name"><strong>Житель комнаты</strong><span role="status" aria-live="polite">{status}</span></div>
@@ -33,6 +36,8 @@ export default function ResidentPanel(p: Props) {
         options={[{value:'auto',label:'Сам по себе'},{value:'direct',label:'Направлять'},
           {value:'paused',label:'Пауза'},{value:'hidden',label:'Скрыть'}]}/></div>
     {p.mode !== 'hidden' && <>
+      {!!p.skills?.length && <div className="resident-skill-actions" role="group" aria-label="Занятия моих навыков">{p.skills.map(skill=><button className="button secondary" key={skill.skillId} disabled={p.disabled} onClick={()=>p.onSkill?.(skill.skillId)}><Sprout size={16}/><span>{skill.name}<small>Уровень {skill.level} · {masteryNames[skill.mastery]}</small></span></button>)}</div>}
+      {p.onRewards && <button className="button secondary" onClick={p.onRewards}><Sparkles size={16}/>Награды в комнате: {p.rewards?.length??0} / 6</button>}
       <div className="resident-actions" role="group" aria-label="Занятия жителя">
         {activities.map(({ action, label, icon: Icon }) => {
           const available = action === 'walk' || residentTargets(p.items, action).length > 0;
@@ -42,7 +47,7 @@ export default function ResidentPanel(p: Props) {
         })}
       </div>
       <div className="resident-hint">
-        {!p.motion ? <><span>{p.reduced ? 'В системе включено уменьшение движения. Житель остаётся неподвижным.' : 'Включи анимацию комнаты, чтобы житель мог двигаться.'}</span>
+        {!p.motion ? <><span>{p.reduced ? 'В системе включено уменьшение движения. Занятия навыков доступны как статичные позы.' : 'Занятия навыков доступны как статичные позы. Включи анимацию, чтобы житель двигался.'}</span>
           {!p.reduced && <button className="button secondary" onClick={p.onEnableMotion}><Sparkles size={16} strokeWidth={1.75}/>Включить анимацию</button>}</> :
           <span>{p.mode === 'direct' ? 'Нажми на свободный пол или предмет: житель подойдёт к нему. Для перестановки мебели выбери «Сам по себе».' :
             p.mode === 'paused' ? 'Житель остаётся на месте. Выбери занятие или верни режим «Сам по себе».' : 'Сам выбирает занятие и обходит мебель. Можно дать ему своё поручение.'}</span>}

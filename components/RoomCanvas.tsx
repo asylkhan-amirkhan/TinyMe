@@ -10,7 +10,8 @@ import { advanceMotion, canAnimate, type RoomMotion } from "@/domain/motion";
 import type { Appearance } from "@/domain/appearance";
 import { lightningIntensity, type Lightning } from '@/domain/storm';
 import {subscribePosterArt} from '@/engine/poster-assets';
-import { advanceResident, commandResident, createResident, reconcileResident, residentStatus, type ResidentCommand, type ResidentMode } from '@/domain/resident';
+import { advanceResident, commandResident, commandSkillResident, syncResidentSkills, createResident, reconcileResident, residentStatus, type ResidentCommand, type ResidentMode } from '@/domain/resident';
+import type { SkillActivity, SkillReward } from '@/domain/skill-growth';
 import type { ResidentScene } from '@/lib/use-room-resident';
 import type { ResidentLook } from '@/domain/resident-look';
 import type { AccentLights } from '@/domain/accent-lights';
@@ -21,6 +22,9 @@ import { accumulateSnow } from '@/domain/snow';
 import {SPECTRUM_BANDS,spectrumPeaks} from '@/domain/live-details';
 import type { Season } from '@/domain/season';
 type Props = {
+  skillActivities?: SkillActivity[];
+  skillRewards?: SkillReward[];
+  onReward?: (id: string) => void;
   demoSky?: 'morning'|'evening'|'night';
   interactionLocked?: boolean;
   season: Season;
@@ -125,10 +129,14 @@ export default function RoomCanvas(props: Props) {
         if (!state.body) state.body = createResident(current.items);
         else if (state.geometry !== geometry) state.body = reconcileResident(state.body, current.items);
         state.geometry = geometry;
+        if (current.skillActivities) state.body = syncResidentSkills(state.body, current.skillActivities, current.items);
+        if (!current.motionEnabled && current.residentMode==='auto' && !state.body.activity && current.skillActivities?.length)
+          state.body = commandSkillResident(state.body,current.items,current.skillActivities[0],true) ?? state.body;
         if (current.residentCommand && state.commandKey !== current.residentCommand.key) {
           state.commandKey = current.residentCommand.key;
-          if (!current.editing && current.motionEnabled && current.residentMode === 'direct') {
-            const plan = commandResident(state.body, current.items, current.residentCommand);
+          if (!current.editing && (current.residentMode === 'direct' || (current.residentMode==='auto' && current.residentCommand.skillId)) && (current.motionEnabled || current.residentCommand.skillId)) {
+            const skill = current.skillActivities?.find(a => a.skillId === current.residentCommand!.skillId);
+            const plan = skill ? commandSkillResident(state.body, current.items, skill, !current.motionEnabled) : current.motionEnabled ? commandResident(state.body, current.items, current.residentCommand) : null;
             if (plan) state.body = plan;
             else current.onDragMessage('Житель не может пройти. Освободи проход к предмету.');
           }
@@ -149,7 +157,7 @@ export default function RoomCanvas(props: Props) {
           syncResident();
           const current = latest.current, state = current.residentScene.current;
           if (state.body && !current.readOnly && (current.residentMode === 'auto' || current.residentMode === 'direct'))
-            state.body = advanceResident(state.body, delta, current.items, current.residentMode === 'auto');
+            state.body = advanceResident(state.body, delta, current.items, current.residentMode === 'auto', current.skillActivities);
           settledSnow.current=current.season==='winter'?accumulateSnow(settledSnow.current,delta,current.snowIntensity,current.raining):.2;
           light = easeValue(light, current.daylight, Math.min(delta,100), 240);
           accent = advanceLightTransition(accent, garlandTarget(current.accentLights, motion.time), Math.min(delta,100));
@@ -186,7 +194,7 @@ export default function RoomCanvas(props: Props) {
         motion.spectrum=current.motionEnabled && !current.editing ? current.readSpectrum(spectrumAt-lastSpectrumAt) : undefined;
         motion.spectrumPeaks=motion.spectrum ? spectrumPeaks(peaks,peakHolds,motion.spectrum,spectrumAt-lastSpectrumAt) : undefined;
         lastSpectrumAt=spectrumAt;
-        if (api.current) api.current.hits = renderRoom(canvas, items, selected, current.editing || !!drag?.moved, invalid, current.appearance, motion, light, current.raining, current.storming, flash, current.lightning?.seed, resident, current.residentLook, accent.frame, renderScale, current.season, current.snowIntensity, settledSnow.current, current.demoSky);
+        if (api.current) api.current.hits = renderRoom(canvas, items, selected, current.editing || !!drag?.moved, invalid, current.appearance, motion, light, current.raining, current.storming, flash, current.lightning?.seed, resident, current.residentLook, accent.frame, renderScale, current.season, current.snowIntensity, settledSnow.current, current.demoSky, current.readOnly ? [] : current.skillRewards);
         texture.source.update();
         app.render();
       };
@@ -206,6 +214,10 @@ export default function RoomCanvas(props: Props) {
         if (e.button !== 0 || !e.isPrimary || drag || current.disabled) return;
         const pt = point(e);
         const hit = [...(api.current?.hits ?? [])].reverse().find(h => hitContext.isPointInPath(h.path, pt.x, pt.y));
+        if (hit?.id.startsWith('skill-reward:')) {
+          if(!current.interactionLocked)current.onReward?.(hit.id.slice('skill-reward:'.length));
+          return;
+        }
         if (!hit && !current.readOnly && !current.editing && current.residentMode === 'direct') {
           if (!current.motionEnabled) { current.onDragMessage('Включи анимацию комнаты, чтобы направлять жителя.'); return; }
           syncResident();
@@ -291,7 +303,7 @@ export default function RoomCanvas(props: Props) {
         if (latest.current.interactionLocked || drag || latest.current.readOnly || latest.current.disabled || (latest.current.residentMode === 'direct' && !latest.current.editing)) return;
         const pt = point(e as PointerEvent);
         const hit = [...(api.current?.hits ?? [])].reverse().find(h => hitContext.isPointInPath(h.path, pt.x, pt.y));
-        if (hit && (!latest.current.editing || hit.id===latest.current.selected)) { if(!latest.current.editing)latest.current.onSelect(hit.id); latest.current.onRotate(hit.id, 1); }
+        if (hit && !hit.id.startsWith('skill-reward:') && (!latest.current.editing || hit.id===latest.current.selected)) { if(!latest.current.editing)latest.current.onSelect(hit.id); latest.current.onRotate(hit.id, 1); }
       };
       app.canvas.addEventListener("contextmenu", rotate);
       app.canvas.style.touchAction = "none";
@@ -369,6 +381,8 @@ export default function RoomCanvas(props: Props) {
     a.syncMotion();
   }, [
     props.demoSky,
+    props.skillActivities,
+    props.skillRewards,
     props.snowIntensity,
     props.season,
     props.accentLights,

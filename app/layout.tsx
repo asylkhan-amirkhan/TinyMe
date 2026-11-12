@@ -26,6 +26,10 @@ import "./settings-studio.css";
 import "./evening-studio.css";
 import "./sunset.css";
 import "./themes.css";
+import "./progress.css";
+import "./progress-graph.css";
+const inter = Inter({subsets:["latin","cyrillic"],variable:"--font-inter",display:"swap"});
+const cormorant = Cormorant_Garamond({subsets:["latin","cyrillic"],weight:["400","500","600"],variable:"--font-cormorant",display:"swap"});
 export const metadata: Metadata = {
   title: "tiny me — твоё тихое место",
   description:

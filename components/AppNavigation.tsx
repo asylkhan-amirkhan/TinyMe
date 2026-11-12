@@ -11,11 +11,13 @@ import {
   Coins,
   Cloud,
   HardDrive,
+  Sprout,
   ShieldCheck,
 } from "lucide-react";
 import { useSessionClock } from "@/lib/use-session-clock";
 const links = [
   { id: "room", label: "Комната", icon: Home },
+  { id: "progress", label: "Развитие", icon: Sprout },
   { id: "shop", label: "Магазин", icon: Armchair },
   { id: "inventory", label: "Мои вещи", icon: Package },
   { id: "music", label: "Музыка", icon: Music2 },

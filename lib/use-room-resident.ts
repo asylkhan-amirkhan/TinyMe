@@ -37,6 +37,11 @@ export function useRoomResident(scope: string) {
     choose('direct');
     setCommand({ key: ++sequence.current, action });
   }, [choose]);
-  return { scene, mode, choose, status, setStatus, command, send, saveLook,
+  const sendSkill = useCallback((skillId: string) => {
+    choose('direct');
+    setCommand({ key: ++sequence.current, skillId });
+  }, [choose]);
+  const reactSkill = useCallback((skillId: string) => setCommand({key:++sequence.current,skillId}),[]);
+  return { scene, mode, choose, status, setStatus, command, send, sendSkill, reactSkill, saveLook,
     look: appearance.scope === scope ? appearance.look : defaultResidentLook, lookReady: appearance.scope === scope };
 }

@@ -38,6 +38,7 @@
   "exclude": [
     "node_modules",
     "supabase/functions",
-    ".import-staging"
+    ".import-staging",
+    "myroom-import-staging"
   ]
 }

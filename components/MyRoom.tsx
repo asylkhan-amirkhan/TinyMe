@@ -2,6 +2,10 @@
 import dynamic from "next/dynamic";
 import packageInfo from "../package.json";
 import ThemeSelector from "./ThemeSelector";
+import ProgressPanel from "./ProgressPanel";
+import { useProgress } from '@/lib/use-progress';
+import { displayedSkillRewards, skillActivities } from '@/domain/skill-growth';
+import { graphHref, milestoneNodeId, type GraphContext } from '@/domain/progress-graph';
 import { useEffect, useState, useCallback, useLayoutEffect, useRef, useMemo } from "react";
 import {
   Search,
@@ -75,6 +79,7 @@ import { useNotifications } from "@/lib/use-notifications";
 import { useNotificationSound } from "@/lib/use-notification-sound";
 const CollectibleViewer=dynamic(()=>import('./CollectibleViewer'),{ssr:false});
 const ResidentWardrobe=dynamic(()=>import('./ResidentWardrobe'),{ssr:false});
+const ProgressGraph=dynamic(()=>import('./ProgressGraph'));
 const RoomCanvas = dynamic(() => import("./RoomCanvas"), {
   ssr: false,
   loading: () => (
@@ -87,8 +92,13 @@ const RoomCanvas = dynamic(() => import("./RoomCanvas"), {
 function mm(seconds: number) {
   return `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
 }
-export default function MyRoom() {
+export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'}) {
   const r = useRoom();
+  const progress = useProgress();
+  const growthActivities = useMemo(()=>skillActivities(progress.data),[progress.data]);
+  const [growthTab,setGrowthTab]=useState<'skills'|'tasks'|'rewards'>('skills');
+  const [focusedReward,setFocusedReward]=useState<string|undefined>();
+  const growthRewards = useMemo(()=>displayedSkillRewards(progress.data).map(reward=>({...reward,selected:reward.id===focusedReward})),[progress.data,focusedReward]);
   const moves = usePlacementHistory(r.room.items, r.user?.id ?? 'guest', r.command, r.setNotice);
   const notificationSound = useNotificationSound();
   const notifications = useNotifications({ scope: r.user?.id ?? "guest", loaded: r.loaded, activeMs: r.room.activeMs }, r.notice, notificationSound.play);
@@ -149,7 +159,27 @@ export default function MyRoom() {
   useEffect(()=>{if(!restMode)return;const overflow=document.body.style.overflow;document.body.style.overflow='hidden';restExit.current?.focus();const escape=(e:KeyboardEvent)=>{if(e.key==='Escape'){setRainOpen(false);setRestMode(false);}};window.addEventListener('keydown',escape);return()=>{document.body.style.overflow=overflow;window.removeEventListener('keydown',escape);restTrigger.current?.focus();};},[restMode]);
   const lastMusicVolume=useRef(.3);
   useEffect(()=>{if(music.music.volume>0)lastMusicVolume.current=music.music.volume;},[music.music.volume]);
-  const [view, setView] = useState("room");
+  const [view, setView] = useState<string>(initialView);
+  const [graphContext,setGraphContext]=useState<GraphContext>({});
+  useEffect(()=>{
+    const read=()=>{
+      const url=new URL(window.location.href);
+      if(url.pathname==='/graph') {
+        setGraphContext({skill:url.searchParams.get('skill')||undefined,focus:url.searchParams.get('focus')||undefined});
+        setView('graph');
+      } else if(url.pathname==='/room') {
+        const desired=url.searchParams.get('view');
+        setView(desired&&['progress','shop','inventory','music','stats','profile','settings'].includes(desired)?desired:'room');
+      }
+    };
+    read();window.addEventListener('popstate',read);
+    return()=>window.removeEventListener('popstate',read);
+  },[]);
+  const openGraph=(skill?:string,focus?:string)=>{
+    if(window.location.pathname!=='/graph')window.history.replaceState(null,'','/room'+(view==='room'?'':`?view=${encodeURIComponent(view)}`));
+    const context={skill,focus};
+    window.history.pushState(null,'',graphHref(context));setGraphContext(context);setView('graph');
+  };
   const [search,setSearch]=useState('');
   const [inventorySearch,setInventorySearch]=useState('');
   const [inventoryStatus,setInventoryStatus]=useState('Все');
@@ -231,6 +261,8 @@ export default function MyRoom() {
   const [islandOpen,setIslandOpen]=useState(false);
   const dockReturn=useRef<HTMLElement|null>(null);
   const navigate=(next:string)=>{
+    if(window.location.pathname==='/graph'||new URL(window.location.href).searchParams.has('view'))window.history.pushState(null,'','/room'+(next==='room'?'':`?view=${encodeURIComponent(next)}`));
+    if(next==='progress'){setGrowthTab('skills');setFocusedReward(undefined);}
     dockReturn.current=document.activeElement as HTMLElement;
     if(next!=='room'){setExpanded(false);setSelected(null);setDraft(null);setRainOpen(false);setColorDraft(null);setFurnitureColor(null);}
     setView(next);
@@ -238,7 +270,7 @@ export default function MyRoom() {
   useEffect(()=>{const prior=document.body.style.overflow;document.body.style.overflow='hidden';return()=>{document.body.style.overflow=prior;};},[]);
   useEffect(()=>{
     if(view==='room')return;
-    const escape=(e:KeyboardEvent)=>{if(e.key==='Escape'&&!e.defaultPrevented&&!document.querySelector('dialog[open]')){setView('room');requestAnimationFrame(()=>dockReturn.current?.focus({preventScroll:true}));}};
+    const escape=(e:KeyboardEvent)=>{if(e.key==='Escape'&&!e.defaultPrevented&&!document.querySelector('dialog[open]')){if(window.location.pathname==='/graph')window.history.pushState(null,'','/room');setView('room');requestAnimationFrame(()=>dockReturn.current?.focus({preventScroll:true}));}};
     document.addEventListener('keydown',escape);return()=>document.removeEventListener('keydown',escape);
   },[view]);
   const [accountRecovery,setAccountRecovery]=useState(false);
@@ -346,7 +378,7 @@ export default function MyRoom() {
       {restMode && rainOpen && <RainPanel atmosphere={atmosphere} wind={wind} winter={season.season==='winter'} rain={rain} storm={storm} onClose={()=>setRainOpen(false)}/>}
       <a className="skip-link" href="#main-content">К содержимому</a>
       <AppNavigation
-        view={view}
+        view={view==='graph'?'progress':view}
         onNavigate={navigate}
         balance={r.room.balance}
         activeMs={r.room.activeMs} running={r.timerRunning}
@@ -438,6 +470,9 @@ export default function MyRoom() {
                     season={season.season}
                     onInteract={id => { void r.command('toggle', {id}); }}
                     residentLook={resident.look}
+                    skillActivities={growthActivities}
+                    skillRewards={growthRewards}
+                    onReward={id=>{const reward=growthRewards.find(r=>r.id===id);if(reward){setFocusedReward(id);openGraph(reward.skillId,milestoneNodeId(reward.skillId,reward.level));}}}
                     residentScene={resident.scene}
                     residentMode={resident.mode}
                     residentCommand={resident.command}
@@ -599,6 +634,9 @@ export default function MyRoom() {
                 </RoomStage>
               </div>
               {!showcase && <ResidentPanel items={r.room.items} mode={resident.mode} status={resident.status}
+                skills={growthActivities} rewards={growthRewards}
+                onSkill={resident.sendSkill}
+                onRewards={()=>{setGrowthTab('rewards');setFocusedReward(undefined);setView('progress');}}
                 onStyle={() => setWardrobe(true)} styleReady={resident.lookReady}
                 disabled={r.busy || !r.loaded || !!draft || !!colorDraft || !!furnitureColor}
                 motion={motion.enabled} reduced={motion.reduced} onEnableMotion={motion.toggle}
@@ -631,6 +669,12 @@ export default function MyRoom() {
 
       <main id="main-content" tabIndex={-1} className="main pb-32 font-sans" aria-hidden={view === "room"} inert={view === "room"}>
         <div className="page-content">
+          {view === "progress" && <ProgressPanel progress={progress} initialTab={growthTab} focusedReward={focusedReward}
+            onGraph={openGraph}
+            onPractice={id=>{resident.sendSkill(id);setView('room');}}
+            onCompleted={(message,id)=>{notifications.notify({kind:'info',title:'Шаг к новому мастерству',message});if(resident.mode==='auto')resident.reactSkill(id);}} />}
+          {view === 'graph' && <ProgressGraph data={progress.data} loaded={progress.loaded} error={progress.error} context={graphContext}
+            onNavigate={context=>openGraph(context.skill,context.focus)} onRoom={()=>navigate('room')} onProgress={()=>navigate('progress')}/>}
           {view === "shop" && (
             <>
               <div className="page-heading">
