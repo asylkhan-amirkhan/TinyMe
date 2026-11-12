@@ -14,6 +14,8 @@ export function residentArtwork(resident: Resident, light: RoomLight,
   project: (x: number, y: number, z?: number) => Point, look: ResidentLook = defaultResidentLook, compact = false) {
   if (!resident.visible) return [];
   const r = resident, pose = residentPose(r), walking = pose.walking;
+  const stage = r.activity?.mastery === 'master' ? 3 : r.activity?.mastery === 'confident' ? 2 : 1;
+  const practice = pose.practice ?? 0, behavior = r.activity?.behavior;
   const stride = Math.sin(pose.stride) * walking, breath = Math.sin(r.time * 1.8) * .36;
   const angle = pose.facing + pose.listen * Math.sin(r.time * 3) * .07;
   const forward = [Math.cos(angle), Math.sin(angle)], side = [-forward[1], forward[0]];
@@ -26,7 +28,7 @@ export function residentArtwork(resident: Resident, light: RoomLight,
     x*=propWeight; y*=propWeight; z=hip+5+(z-hip-5)*propWeight;
     const upper=Math.max(0,Math.min(1,(z-hip)/32));
     const sway=(stride*.025+Math.sin(r.time*.85)*.012*(1-walking))*upper;
-    const lean=(pose.work*.1+walking*.035)*upper;
+    const lean=(pose.work*.1+walking*.035+practice*(stage===1?.1:stage===2?.03:-.025))*upper;
     const headWeight=Math.max(0,Math.min(1,(z-hip-36)/12));
     x+=Math.sin(r.time*.65)*.025*pose.work*headWeight;
     y+=Math.sin(r.time*.48)*.018*pose.work*headWeight;
@@ -161,10 +163,11 @@ export function residentArtwork(resident: Resident, light: RoomLight,
   }
   // Jointed arms follow the hands, so skin and sleeves remain connected in every pose.
   for(const sign of [-1,1]) {
-    const active=pose.work+pose.read+pose.water;
-    const reach=pose.work*(r.target?.workReach??1.2)+(pose.read+pose.water)*.82-stride*sign*.32*(1-active);
+    const active=Math.min(1,pose.work+pose.read+pose.water+practice);
+    const reach=pose.work*(r.target?.workReach??1.2)+(pose.read+pose.water+practice)*.82-stride*sign*.32*(1-active);
     const restingHandZ=hip+5+(17+Math.sin(r.time*2+sign))*active+bob*(1-active);
-    const handZ=restingHandZ*(1-pose.work)+(70+Math.sin(r.time*7+sign)*.35)*pose.work;
+    const exerciseLift = behavior==='exercise' ? (stage*4+Math.sin(r.time*(stage===1?1.5:stage===2?2.2:2.8)+sign)*(stage*3))*practice : 0;
+    const handZ=restingHandZ*(1-pose.work)+(70+Math.sin(r.time*(stage===1?3:stage===2?6:8)+sign)*.35)*pose.work+exerciseLift;
     const shoulder:Vertex=[sign*.53,0,torso+27-pose.work*2],elbow:Vertex=[sign*(.65-.13*pose.work),reach*.42,(handZ-2*pose.work+4*(1-pose.work))*active+(torso+15)*(1-active)];
     const hand:Vertex=[sign*(.62-.27*pose.work),reach,handZ];
     oval(sign*.49,0,torso+25,.19,.2,5.5,cloth);
@@ -279,6 +282,46 @@ export function residentArtwork(resident: Resident, light: RoomLight,
   if(pose.water>.005) {
     propWeight=pose.water;
     gem(.35,.78,hip+8,.62,.54,14,'#88a8ad');box(.5,1.23,hip+15,.16,.65,4,'#a4c1c2');
+  }
+  // Skill tools are temporary geometry. They never overwrite wardrobe selections.
+  const skillWeight = Math.max(practice,pose.read,pose.work);
+  if(r.activity && skillWeight>.005) {
+    propWeight=skillWeight;
+    const z=hip+22;
+    if(behavior==='study' && practice>.005) {
+      box(-.54,.8,z,1.08,.62,3,'#8f789e');
+      box(-.5,.84,z+3,.47,.55,2,'#f0e2c7');box(.03,.84,z+3,.47,.55,2,'#e3d4b8');
+    }
+    if(behavior==='desk' && practice>.005) {
+      box(-.58,.75,z,1.16,.72,2,'#9eabc5');box(-.58,1.36,z+2,1.16,.06,20,'#505e7b');
+      box(-.5,1.32,z+5,1,.025,14,stage===1?'#a7bdcf':stage===2?'#9dd4b7':'#c4b3e3');
+    }
+    if(behavior==='exercise') {
+      for(const sign of stage===1?[1]:[-1,1]) {
+        const lift=stage*4+Math.sin(r.time*(stage===1?1.5:stage===2?2.2:2.8)+sign)*(stage*3);
+        box(sign*.62-.22,.72,hip+18+lift,.44,.12,2,'#bbc1cc');
+        for(const edge of [-1,1])box(sign*.62+edge*.22-.07,.64,hip+15+lift,.14,.3,stage===1?6:stage===2?9:12,stage===3?'#d7bb79':'#68788e');
+      }
+    }
+    if(behavior==='drawing') {
+      box(-.5,.9,z,1,.7,2,'#c4a27e');box(-.45,.94,z+2,.9,.6,1,'#f0e2c7');
+      for(let n=0;n<stage+1;n++)box(-.32+n*.18,1.05,z+3,.12,.32,1,['#8ca7c6','#a0b597','#d6a491','#d3bb77'][n]);
+      box(.48,.72,z+2,.035,.45,stage===1?8:14,'#a17b58');
+    }
+    if(behavior==='music') {
+      oval(-.05,.87,hip+12,.42,.18,17,stage===3?'#b5784e':'#c6a270');
+      box(.13,.83,hip+26,.13,.13,23,'#705746');
+      for(let n=0;n<3;n++)box(-.05+n*.035,1.055,hip+16,.008,.018,30,'#e8d8b6');
+    }
+    if(behavior==='universal') {
+      box(-.4,.9,z,.8,.55,2,'#aebd9b');box(-.33,.94,z+2,.66,.47,1,'#efe3ce');
+      for(let n=0;n<stage+1;n++)box(-.24,1.01+n*.09,z+3,.44,.025,.5,'#8d9b8a');
+    }
+    if(stage>=2) {
+      // A pencil/marker and a second reference distinguish mastery even when still.
+      box(.57,.85,z+1,.035,.14,11,stage===2?'#c9ae72':'#dbbd81');
+      if(stage===3) { box(-.84,.71,z-5,.28,.64,5,'#a3b8b4');box(-.81,.75,z,.22,.55,1,'#f3e6cb'); }
+    }
   }
   return shapes;
 }

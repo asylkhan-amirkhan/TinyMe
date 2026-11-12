@@ -13,6 +13,7 @@ export type ResidentPose = {
   read: number;
   water: number;
   listen: number;
+  practice?: number;
 };
 
 export const WALK_SPEED = 2.4;
@@ -28,6 +29,7 @@ export function residentPose(r: Resident): ResidentPose {
     seatId: r.seated ? r.target?.seatId : undefined,
     work: Number(!walking && r.action === 'work'), read: Number(!walking && r.action === 'read'),
     water: Number(!walking && r.action === 'water'), listen: Number(!walking && r.action === 'listen'),
+    practice: Number(!walking && r.action === 'practice'),
   };
 }
 
@@ -47,5 +49,6 @@ export function advanceResidentPose(previous: ResidentPose, r: Resident, dt: num
     read: damp(previous.read, Number(active && r.action === 'read'), 7, dt),
     water: damp(previous.water, Number(active && r.action === 'water'), 7, dt),
     listen: damp(previous.listen, Number(active && r.action === 'listen'), 7, dt),
+    practice: damp(previous.practice ?? 0, Number(active && r.action === 'practice'), 7, dt),
   };
 }

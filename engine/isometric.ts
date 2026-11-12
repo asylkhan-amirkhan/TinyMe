@@ -9,6 +9,8 @@ import type { Resident } from '../domain/resident';
 import {residentBehindFurniture} from '../domain/resident';
 import type { ResidentLook } from '../domain/resident-look';
 import { drawResident } from './resident-art';
+import { drawRoomRewards } from './skill-reward-art';
+import type { SkillReward } from '../domain/skill-growth';
 import { eveningBackdrop, eveningDesk, livingClock } from './evening-atmosphere';
 import { defaultAccentLights, type AccentLights } from '../domain/accent-lights';
 import { materialColor } from '../domain/furniture-color';
@@ -810,6 +812,7 @@ export function renderRoom(
   snowIntensity = 50,
   snowDepth = .2,
   demoSky?: 'morning'|'evening'|'night',
+  skillRewards: SkillReward[] = [],
 ) {
   daylight=Math.max(0,Math.min(1,daylight));
   if (canvas.width !== Math.round(SCENE.width * renderScale)) canvas.width = Math.round(SCENE.width * renderScale);
@@ -901,7 +904,7 @@ export function renderRoom(
     });
   // Draw each tabletop's contents after its surface, retaining room depth order.
   const sorted=roots.flatMap(root=>[root,...worldItems.filter(i=>i.parentId===root.id&&i.x!==null&&i.y!==null).sort((a,b)=>a.x!+a.y!-b.x!-b.y!)]);
-  const hits: Hit[] = [];
+  const hits: Hit[] = drawRoomRewards(g,skillRewards,project);
   const lighting=roomLight(sorted,daylight,overcast);
   for(const item of sorted.filter(i=>productOf(i).surface==='rug'))hits.push({id:item.id,path:furniture(g,item,motion,lighting)});
   const floorKey=JSON.stringify([key,daylight,sorted]);
