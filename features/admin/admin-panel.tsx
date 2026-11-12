@@ -113,6 +113,6 @@ export function AdminPanel() {
         </form>
       </aside>
     </div>
-    <div className="mt-6 flex items-start gap-3 rounded-xl bg-sage/60 p-4 text-xs leading-5 text-muted"><Icon name="info" className="mt-0.5 size-5 shrink-0 text-forest"/><p>Предпросмотр админ-панели открыт для знакомства с интерфейсом. Вход администратора и управление доступом появятся вместе с сохранением коллекции.</p></div>
+    <div className="mt-6 flex items-start gap-3 rounded-xl bg-sage/60 p-4 text-xs leading-5 text-muted"><Icon name="info" className="mt-0.5 size-5 shrink-0 text-forest"/><p>Редактор коллекций остаётся макетом без публикации. Управление ролями работает в разделе «Пользователи».</p></div>
   </>;
 }

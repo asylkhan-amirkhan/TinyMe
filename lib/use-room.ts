@@ -18,6 +18,7 @@ import { furnishStudio } from '@/domain/studio-layout';
 export function useRoom() {
   const [room, setRoom] = useState<RoomData>(initialRoom);
   const [user, setUser] = useState<User | null>(null);
+  const [role, setRole] = useState<'user' | 'admin'>('user');
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("Загрузка…");
@@ -25,34 +26,55 @@ export function useRoom() {
   const [activity, setActivity] = useState("Нажмите в комнате, чтобы начать");
   const [ready, setReady] = useState(false);
   const state = useRef(room);
-  state.current = room;
+  useEffect(() => { state.current = room; }, [room]);
   const [timerRunning, setTimerRunning] = useState(false);
   const timerControl = useRef<() => void>(() => {});
   const mutation = useRef(false);
   const userRef = useRef<User | null>(user);
-  userRef.current = user;
   const refresh = useCallback(async () => {
+    const identity = userRef.current?.id;
     const r = await rpc<RoomData>("bootstrap");
-    setRoom(r);
+    if (identity === userRef.current?.id) setRoom(r);
     return r;
   }, []);
   useEffect(() => {
     let live = true;
     let initialized = false;
     let accountId: string | null = null;
+    let generation = 0;
+    let authEventSeen = false;
     const init = async (u: User | null) => {
       if (!live) return;
       // Auth token refreshes must not restart a running background session.
-      if (initialized && accountId === (u?.id ?? null)) { setUser(u); return; }
+      if (initialized && accountId === (u?.id ?? null)) {
+        const current = generation;
+        setUser(u);
+        userRef.current = u;
+        if (u) {
+          const profile = await rpc<{role: 'user'|'admin'}>('my_profile').catch(() => null);
+          if (live && current === generation) setRole(profile?.role ?? 'user');
+        }
+        return;
+      }
+      const current = ++generation;
+      const isCurrent = () => live && current === generation;
       initialized = true;
       accountId = u?.id ?? null;
       setLoaded(false);
       setUser(u);
+      userRef.current = u;
+      setRole('user');
+      setRoom(initialRoom());
 
       try {
         if (u) {
-          setRoom(await rpc<RoomData>("bootstrap"));
-          setStatus("Сохранено в облаке");
+          const [data, profile] = await Promise.all([
+            rpc<RoomData>('bootstrap'), rpc<{role: 'user'|'admin'}>('my_profile'),
+          ]);
+          if (!isCurrent()) return;
+          setRoom(data);
+          setRole(profile.role);
+          setStatus("Сохранено на сервере");
         } else {
           const local = localStorage.getItem("myroom:guest:v1");
           if (local) {
@@ -68,17 +90,20 @@ export function useRoom() {
           setStatus("Сохранено на устройстве");
         }
       } catch (e) {
+        if (!isCurrent()) return;
         setNotice(errorMessage((e as Error).message));
         setStatus("Ошибка загрузки");
       } finally {
-        if (live) setLoaded(true);
+        if (isCurrent()) setLoaded(true);
       }
     };
     supabase?.auth
       .getSession()
-      .then(({ data }) => init(data.session?.user ?? null));
+      .then(({ data }) => { if (!authEventSeen) return init(data.session?.user ?? null); })
+      .catch(() => { if (!authEventSeen) void init(null); });
     if (!supabase) void init(null);
     const sub = supabase?.auth.onAuthStateChange((_event, s) => {
+      authEventSeen = true;
       setTimeout(() => {
         if (live) void init(s?.user ?? null);
       }, 0);
@@ -242,6 +267,7 @@ export function useRoom() {
           }
         }
         if (result) {
+          if (userRef.current?.id !== user.id) return false;
           const confirmed = result;
           setRoom((s) => mergeRoom(s, confirmed));
         }
@@ -314,6 +340,7 @@ export function useRoom() {
       }
       return true;
     } catch (e) {
+      if (user?.id !== userRef.current?.id) return false;
       const msg = (e as Error).message;
       setNotice(errorMessage(msg));
       setStatus("Изменение не сохранено");
@@ -337,6 +364,7 @@ export function useRoom() {
         p_kind: p.kind,
         p_payload: p.body,
       });
+      if (userRef.current?.id !== user.id) return;
       setRoom(result);
       localStorage.removeItem("myroom:pending:" + user.id);
       setStatus("Сохранено в облаке");
@@ -350,6 +378,7 @@ export function useRoom() {
   return {
     room,
     user,
+    role,
     loaded,
     busy,
     status,

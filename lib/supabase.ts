@@ -8,11 +8,17 @@ export async function rpc<T>(
 ): Promise<T> {
   if (!supabase) throw Error("Облачное подключение не настроено");
   const { data, error } = await supabase.rpc(name, args);
+  if (error?.code === 'PT401') {
+    // The database detected a revoked Auth session; also clear the browser session.
+    await supabase.auth.signOut({ scope: 'local' });
+    throw Error('AUTH_SESSION_EXPIRED');
+  }
   if (error) throw Error(error.message);
   return data as T;
 }
 export const errorMessage = (message: string) =>
   ({
+    AUTH_SESSION_EXPIRED: "Сеанс входа завершён. Войди в аккаунт снова.",
     INSUFFICIENT_FUNDS:
       "Пока не хватает монет. Каждая активная минута приносит одну.",
     ROOM_VERSION_CONFLICT:

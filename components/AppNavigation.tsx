@@ -26,13 +26,14 @@ export default function AppNavigation({
   onNavigate,
   balance,
   status,
-  cloud, activeMs, running,
+  cloud, activeMs, running, isAdmin = false,
 }: {
   view: string;
   onNavigate: (view: string) => void;
   balance: number;
   status: string;
   cloud: boolean; activeMs: number; running: boolean;
+  isAdmin?: boolean;
 }) {
   const router = useRouter();
   const displayMs=useSessionClock(activeMs,running,cloud);
@@ -69,7 +70,7 @@ export default function AppNavigation({
             <span className="dock-tooltip" aria-hidden="true">{link.label}</span>
           </button>
         ))}
-        <button
+        {isAdmin && <button
           type="button"
           aria-label="Админ-панель"
           onClick={() => router.push("/admin")}
@@ -77,7 +78,7 @@ export default function AppNavigation({
           <ShieldCheck size={16} aria-hidden="true" strokeWidth={1.75}/>
           <span className="dock-label">Админ-панель</span>
           <span className="dock-tooltip" aria-hidden="true">Админ-панель</span>
-        </button>
+        </button>}
       </nav>
       <div className="studio-account">
         <span className="studio-sync" title={status} aria-label={status}>

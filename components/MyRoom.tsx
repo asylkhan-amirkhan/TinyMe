@@ -352,6 +352,7 @@ export default function MyRoom() {
         activeMs={r.room.activeMs} running={r.timerRunning}
         status={r.status}
         cloud={!!r.user}
+        isAdmin={r.role==='admin'}
       />
       <div className="immersive-room">
 
