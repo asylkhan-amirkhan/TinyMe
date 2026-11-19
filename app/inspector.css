@@ -35,6 +35,7 @@
 .inspector-fields { display:grid; gap:var(--space-2); padding:var(--space-1) 0 var(--space-2); }
 .inspector-fields>label { font-size:var(--type-2); color:var(--palette-162); }
 .inspector-fields .cozy-select { width:100%; min-height:44px; }
+.inspector-surface { margin-bottom:var(--space-3); }
 .inspector-fields p { margin:0; }
 .inspector-coordinates { display:flex; gap:var(--space-3); }
 .inspector-coordinates label { display:flex; align-items:center; gap:var(--space-2); flex:1; font-size:var(--type-2); color:var(--palette-160); }

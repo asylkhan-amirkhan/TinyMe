@@ -22,7 +22,12 @@ import {
   dimensions,
   productOf,
   resolveItems,
+  deskSurfaceHeight,
   decorHeight,
+  roomWallHeight,
+  wallArtBounds,
+  wallArtDepth,
+  type WallSide,
   type WorldItem,
   type Item,
   type Product,
@@ -45,7 +50,17 @@ export function unproject(x: number, y: number): Point {
     b = (y - SCENE.oy) / SCENE.uy;
   return [(a + b) / 2, (b - a) / 2];
 }
-export type Hit = { id: string; path: Path2D };
+export function wallSideAt(x: number): WallSide {
+  return x < SCENE.ox ? 'left' : 'right';
+}
+export function projectWall(side: WallSide, along: number, height: number, depth = 0): Point {
+  return side === 'left' ? project(depth, along, height) : project(along, depth, height);
+}
+export function unprojectWall(x: number, y: number, side: WallSide = wallSideAt(x), depth = 0): Point {
+  const along = (x - SCENE.ox) / SCENE.ux * (side === 'left' ? -1 : 1) + depth;
+  return [along, SCENE.oy + (along + depth) * SCENE.uy - y];
+}
+export type Hit = { id: string; path: Path2D; wall?: boolean };
 type Paint = string | CanvasGradient;
 type V = [number, number, number];
 const shade = (hex: string, n: number) => {
@@ -55,15 +70,19 @@ const shade = (hex: string, n: number) => {
     .map((v) => Math.max(0, Math.min(255, parseInt(v, 16) + n)));
   return `rgb(${rgb.join(",")})`;
 };
+function polygonPath(points: Point[]) {
+  const path = new Path2D();
+  points.forEach(([x, y], i) => (i ? path.lineTo(x, y) : path.moveTo(x, y)));
+  path.closePath();
+  return path;
+}
 export function polygon(
   g: CanvasRenderingContext2D,
   points: Point[],
   color: Paint,
   stroke?: string,
 ) {
-  const p = new Path2D();
-  points.forEach(([x, y], i) => (i ? p.lineTo(x, y) : p.moveTo(x, y)));
-  p.closePath();
+  const p = polygonPath(points);
   g.fillStyle = color;
   g.fill(p);
   if (stroke) {
@@ -138,8 +157,8 @@ function room(g: CanvasRenderingContext2D, appearance?: Appearance, daylight = 0
   right.addColorStop(0, shade(colors.wallRight, -20));
   right.addColorStop(0.55, colors.wallRight);
   right.addColorStop(1, shade(colors.wallRight, -55));
-  polygon(g, [p(0, 16), p(0, 0), p(0, 0, 245), p(0, 16, 245)], left);
-  polygon(g, [p(0, 0), p(24, 0), p(24, 0, 245), p(0, 0, 245)], right);
+  polygon(g, [p(0, 16), p(0, 0), p(0, 0, roomWallHeight), p(0, 16, roomWallHeight)], left);
+  polygon(g, [p(0, 0), p(24, 0), p(24, 0, roomWallHeight), p(0, 0, roomWallHeight)], right);
   polygon(
     g,
     [p(-0.5, 16, 245), p(-0.5, -0.5, 245), p(0, 0, 245), p(0, 16, 245)],
@@ -317,13 +336,19 @@ function room(g: CanvasRenderingContext2D, appearance?: Appearance, daylight = 0
 }
 
 function furniture(g: CanvasRenderingContext2D, item: Item, motion?: RoomMotion, lighting?: RoomLight, shelfLayer?:number, accentLights:AccentLights=defaultAccentLights): Path2D {
-  const elevation=(item as WorldItem).elevation??0;
   const product = productOf(item),
     { w, h } = product,
     d = dimensions(product, item.rotation),
     ix = item.x!,
     iy = item.y!;
+  const art = product.surface === 'wall' ? wallArtBounds(product) : undefined;
+  const elevation = (item as WorldItem).elevation ?? item.wallHeight ?? art?.defaultHeight ?? 0;
   const world = (x: number, y: number, z: number): Vec3 => {
+    if (art) {
+      const along = (ix + (item.wallSide === 'left' ? w - x : x)) * LIGHT_UNIT;
+      const depth = y * LIGHT_UNIT;
+      return item.wallSide === 'left' ? [depth, along, z + elevation] : [along, depth, z + elevation];
+    }
     const r = ((item.rotation % 360) + 360) % 360;
     const [a, b] =
       r === 90
@@ -485,7 +510,7 @@ function furniture(g: CanvasRenderingContext2D, item: Item, motion?: RoomMotion,
     case "desk":
       for (const x of [0.2, w - 0.35])
         for (const y of [0.2, h - 0.35]) box(x, y, 0, 0.15, 0.15, 58, metal);
-      box(0, 0, 58, w, h, 7, wood);
+      box(0, 0, deskSurfaceHeight - 7, w, h, 7, wood);
       box(w - 0.95, 0.25, 4, 0.7, h - 0.5, 47, tint("#53445d", -15));
       for (const x of [0.4, 2.1]) {
         box(x + 0.55, 0.45, 65, 0.4, 0.45, 3, metal);
@@ -656,19 +681,21 @@ function furniture(g: CanvasRenderingContext2D, item: Item, motion?: RoomMotion,
     case "collectible":
       gamingMiniature(product.id,fabric,{box,turned,face});
       break;
-    case "art":
-      if(product.game){box(0,0,100,w,.2,80,item.color?fabric:metal);break;}
-      box(0, 0, 120, w, 0.2, 55, metal);
+    case "art": {
+      const height = art!.height;
+      if(product.game){box(0,0,0,w,.2,height,item.color?fabric:metal);break;}
+      box(0, 0, 0, w, 0.2, height, metal);
       face(
         [
-          [0.1, 0.21, 124],
-          [w - 0.1, 0.21, 124],
-          [w - 0.1, 0.21, 171],
-          [0.1, 0.21, 171],
+          [0.1, wallArtDepth, 4],
+          [w - 0.1, wallArtDepth, 4],
+          [w - 0.1, wallArtDepth, height - 4],
+          [0.1, wallArtDepth, height - 4],
         ],
         fabric,
       );
       break;
+    }
     case "record":
       box(0.1, 0.1, 0, w - 0.2, h - 0.2, 30, wood);
       box(0, 0, 30, w, h, 7, tint("#927388", 22));
@@ -702,13 +729,14 @@ function furniture(g: CanvasRenderingContext2D, item: Item, motion?: RoomMotion,
     );
     hit.addPath(path);
   }
-  if(product.kind==='art' && product.game && [0,270].includes(item.rotation)) {
-    const a=transform(.12,.21,178),b=transform(w-.12,.21,178),c=transform(.12,.21,102);
+  if(product.kind==='art' && product.game) {
+    const height=art!.height;
+    const a=transform(.12,wallArtDepth,height-2),b=transform(w-.12,wallArtDepth,height-2),c=transform(.12,wallArtDepth,2);
     g.save();g.transform((b[0]-a[0])/480,(b[1]-a[1])/480,(c[0]-a[0])/640,(c[1]-a[1])/640,a[0],a[1]);
     g.drawImage(gamingPoster(product.id),0,0,480,640);
     if(lighting){
       g.globalCompositeOperation='multiply';
-      g.fillStyle=litColor('#ffffff',world(w/2,.21,140),item.rotation===0?[0,1,0]:[1,0,0],lighting,item.id);
+      g.fillStyle=litColor('#ffffff',world(w/2,wallArtDepth,height/2),item.wallSide==='left'?[1,0,0]:[0,1,0],lighting,item.id);
       g.fillRect(0,0,480,640);
     }
     g.restore();
@@ -904,10 +932,13 @@ export function renderRoom(
     });
   // Draw each tabletop's contents after its surface, retaining room depth order.
   const sorted=roots.flatMap(root=>[root,...worldItems.filter(i=>i.parentId===root.id&&i.x!==null&&i.y!==null).sort((a,b)=>a.x!+a.y!-b.x!-b.y!)]);
+  const floorItems=sorted.filter(item=>productOf(item).surface!=='wall');
+  const wallItems=roots.filter(item=>productOf(item).surface==='wall');
+  const wallSelected=wallItems.some(item=>item.id===selected);
   const hits: Hit[] = drawRoomRewards(g,skillRewards,project);
   const lighting=roomLight(sorted,daylight,overcast);
   for(const item of sorted.filter(i=>productOf(i).surface==='rug'))hits.push({id:item.id,path:furniture(g,item,motion,lighting)});
-  const floorKey=JSON.stringify([key,daylight,sorted]);
+  const floorKey=JSON.stringify([key,daylight,floorItems]);
   let floorLayer=floorLayers.get(canvas);
   if(!floorLayer || floorLayer.key!==floorKey) {
     const layer=floorLayer?.canvas ?? document.createElement('canvas');
@@ -916,7 +947,7 @@ export function renderRoom(
     const context=layer.getContext('2d')!;
     context.setTransform(1,0,0,1,0,0);context.clearRect(0,0,layer.width,layer.height);
     context.drawImage(canvas,0,0);context.save();context.scale(renderScale,renderScale);
-    floorLighting(context,sorted,lighting,season);context.restore();
+    floorLighting(context,floorItems,lighting,season);context.restore();
     floorLayer={key:floorKey,canvas:layer};floorLayers.set(canvas,floorLayer);
   }
   // Clip cached pixels to the floor: rain, curtains and wall lights stay live.
@@ -924,20 +955,35 @@ export function renderRoom(
   [project(0,0),project(24,0),project(24,16),project(0,16)].forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));
   g.closePath();g.clip();g.drawImage(floorLayer.canvas,0,0,SCENE.width,SCENE.height);g.restore();
   // Placement guides are transient: never bake them into the cached floor.
-  if (editing) {
+  if (editing && !wallSelected) {
     for (let x = 0; x <= 24; x++)
       line(g, project(x, 0), project(x, 16), "#c3b4e92e");
     for (let y = 0; y <= 16; y++)
       line(g, project(0, y), project(24, y), "#c3b4e92e");
   }
   const drawItem=(item:WorldItem,shelfLayer?:number)=> {
+    const product=productOf(item);
+    if (product.surface === 'wall') {
+      const side = item.wallSide ?? 'right';
+      const x = item.x!, z = item.elevation, top = z + wallArtBounds(product, side).height;
+      const points = [
+        projectWall(side, x, z, wallArtDepth), projectWall(side, x + product.w, z, wallArtDepth),
+        projectWall(side, x + product.w, top, wallArtDepth), projectWall(side, x, top, wallArtDepth),
+      ];
+      const selectedFrame = item.id === selected;
+      const blocked = selectedFrame && invalid;
+      const path = selectedFrame
+        ? polygon(g, points, blocked ? '#f2808e25' : '#bdb1ff50', blocked ? '#ff93a4' : '#dcd4ff')
+        : polygonPath(points);
+      if (!blocked || !editing) furniture(g, item, motion, lighting, shelfLayer, accentLights);
+      hits.push({ id: item.id, path, wall: true });
+      return;
+    }
     if (item.id === selected && (shelfLayer===undefined||shelfLayer===-1)) {
-      const { w, h } = dimensions(productOf(item), item.rotation),
+      const { w, h } = dimensions(product, item.rotation),
         x = item.x!,
         y = item.y!;
-      const product=productOf(item);
-      const z=product.game?100:120,top=product.game?180:175;
-      const outline=product.surface==='wall' ? [project(x-.08,.26,z-2),project(x+w+.08,.26,z-2),project(x+w+.08,.26,top+2),project(x-.08,.26,top+2)] : [
+      const outline=[
           project(x, y, item.elevation),
           project(x + w, y, item.elevation),
           project(x + w, y + h, item.elevation),
@@ -959,10 +1005,10 @@ export function renderRoom(
   let residentDrawn = !resident?.visible;
   const occupiedSeat = resident?.seated ? resident.target?.seatId : resident?.pose?.seatId;
   const paintResident = () => { if (resident && !residentDrawn) { drawResident(g, resident, lighting, project, residentLook); residentDrawn = true; } };
-  for(const root of roots) {
-    if (resident && productOf(root).surface !== 'rug' && residentBehindFurniture(resident,root) && root.id !== occupiedSeat) paintResident();
+  const preview = editing ? sorted.find(item => item.id === selected && productOf(item).surface !== 'rug') : undefined;
+  const drawRoot = (root: WorldItem) => {
+    const contents = sorted.filter(item => item.parentId === root.id && item !== preview);
     if(productOf(root).kind==='shelf') {
-      const contents=sorted.filter(i=>i.parentId===root.id);
       drawItem(root,-1);
       for(let level=0;level<4;level++) {
         drawItem(root,level);
@@ -971,8 +1017,14 @@ export function renderRoom(
       drawItem(root,4);
     } else {
       drawItem(root);
-      for(const child of sorted.filter(i=>i.parentId===root.id))drawItem(child);
+      for(const child of contents)drawItem(child);
     }
+  };
+  for (const item of wallItems) if (item !== preview) drawItem(item);
+  for(const root of roots) {
+    if (root === preview || productOf(root).surface === 'wall') continue;
+    if (resident && productOf(root).surface !== 'rug' && residentBehindFurniture(resident,root) && root.id !== occupiedSeat) paintResident();
+    drawRoot(root);
     if(root.id === occupiedSeat) {
       paintResident();
       // The near-facing chair back must cover the seated torso, not vice versa.
@@ -980,6 +1032,11 @@ export function renderRoom(
     }
   }
   paintResident();
+  // A placement preview stays visible and can be grabbed even behind tall furniture.
+  if (preview) {
+    if (preview.parentId) drawItem(preview);
+    else drawRoot(preview);
+  }
   g.save();
   g.globalCompositeOperation = "screen";
   glow(g, ...project(19, 1, 135), 75, daylight>.5 ? "#ffe6b512" : "#8eb9ef0b");

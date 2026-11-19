@@ -1,3 +1,4 @@
+import { isShopPath } from '../domain/shop';
 import { browserId } from './browser-id';
 
 export type LocalRole = 'user' | 'admin';
@@ -9,6 +10,7 @@ export const sessionKey = 'tinyme:local-session:v1';
 export const localAuthEvent = 'tinyme:local-auth';
 export function localReturnPath(value: string | string[] | undefined): string | undefined {
   if (typeof value !== 'string') return;
+  if (isShopPath(value.split(/[?#]/, 1)[0])) return value;
   if (['/room', '/graph', '/admin', '/catalog', '/community'].includes(value)) return value;
 
   const match = /^\/(catalog|profiles|collections)\/((?:[a-z0-9_:-]|%3a)+)$/i.exec(value);

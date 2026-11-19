@@ -110,6 +110,12 @@ Deno.serve(async (req) => {
     error: authError,
   } = await admin.auth.getUser(token);
   if (authError || !user) return respond({ error: "UNAUTHORIZED" }, 401);
+  const caller = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { error: sessionError } = await caller.rpc("check_session");
+  if (sessionError) return respond({ error: "UNAUTHORIZED" }, 401);
   let body: Record<string, unknown>;
   try {
     const raw = await req.text();

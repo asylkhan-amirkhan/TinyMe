@@ -1,0 +1,32 @@
+@import "tailwindcss/theme.css" layer(theme);
+@source "./";
+@source "../../components/navigation";
+@source "../../components/ui";
+@source "../../features/shop";
+
+@theme inline {
+  --color-paper: #f7f8f2;
+  --color-surface: #fffefa;
+  --color-ink: #2d382e;
+  --color-muted: #697065;
+  --color-line: #e2e6db;
+  --color-forest: #426748;
+  --color-sage: #e8eedf;
+}
+.online-shop { min-height: 100dvh; background: #f7f8f2; color: #2d382e; font-family: Arial, Helvetica, sans-serif; }
+@scope (.online-shop) {
+  @tailwind utilities source(none);
+
+  ::selection { background: #d9e6cc; }
+  :focus-visible { outline: 3px solid #678855; outline-offset: 4px; }
+  .skip-link { position: fixed; top: -100px; left: 16px; z-index: 100; padding: 12px 18px; background: white; }
+  .skip-link:focus { top: 12px; }
+  .panel { @apply rounded-2xl border border-line bg-surface; }
+  .secondary-link { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-surface px-4 py-2 text-sm font-medium transition-colors hover:bg-sage; }
+  .prototype-button { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-paper px-3 py-2 text-xs font-medium text-muted disabled:cursor-not-allowed; }
+  .shop-button { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-forest px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50; }
+  .shop-input { @apply mt-1 block min-h-11 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+  }
+}
