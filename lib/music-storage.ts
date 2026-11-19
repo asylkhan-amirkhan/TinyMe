@@ -1,4 +1,5 @@
 import { openDB } from "idb";
+import { workshopAudio } from './workshop-music';
 export type Track = {
   id: string;
   title: string;
@@ -7,6 +8,7 @@ export type Track = {
   builtin?: boolean;
   cloud?: boolean;
   contentHash?: string;
+  workshop?: boolean;
 };
 export type Playlist = { id: string; name: string; trackIds: string[] };
 export type ListenStat = {
@@ -61,6 +63,7 @@ export async function putAudio(owner: string, id: string, file: Blob) {
   await (await db()).put("files", file, `${owner}:${id}`);
 }
 export async function getAudio(owner: string, id: string) {
+  if (id.startsWith('workshop-track:')) return workshopAudio(id);
   return (await (await db()).get("files", `${owner}:${id}`)) as
     Blob | undefined;
 }

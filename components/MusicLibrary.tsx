@@ -1,4 +1,5 @@
 "use client";
+import { browserId } from '@/lib/browser-id';
 import { useEffect, useRef, useState } from "react";
 import {
   Cloud, MoreHorizontal, SkipBack, SkipForward,
@@ -72,7 +73,7 @@ export default function MusicLibrary({
       </div>
       <p role="status" className="music-cloud-badge"><Cloud size={16} strokeWidth={1.75} aria-hidden="true"/>
         {music.loadError
-          ? "Коллекция недоступна. Проверьте соединение."
+          ? "Не удалось открыть коллекцию. Проверьте доступ браузера к хранилищу."
           : !music.loaded
             ? "Открываем коллекцию…"
             : music.saving
@@ -138,7 +139,7 @@ export default function MusicLibrary({
             onSubmit={(e) => {
               e.preventDefault();
               if (!playlistName.trim() || editing) return;
-              const id = crypto.randomUUID();
+              const id = browserId();
               music.setMusic((s) => ({
                 ...s,
                 playlists: [
@@ -340,7 +341,7 @@ export default function MusicLibrary({
                     </button>
                   </>
                 )}
-                {!t.builtin && (
+                {!t.builtin && !t.workshop && (
                   <button
                     className="track-delete" aria-label={`Удалить ${t.title}`}
                     disabled={editing}

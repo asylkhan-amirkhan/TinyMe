@@ -1,7 +1,10 @@
 "use client";
 import dynamic from "next/dynamic";
+import Link from 'next/link';
 import packageInfo from "../package.json";
 import ThemeSelector from "./ThemeSelector";
+import { useWorkshopProducts } from "@/lib/use-workshop-products";
+import LocalAccountPanel from "./LocalAccountPanel";
 import ProgressPanel from "./ProgressPanel";
 import { useProgress } from '@/lib/use-progress';
 import { displayedSkillRewards, skillActivities } from '@/domain/skill-growth';
@@ -30,7 +33,7 @@ import {
   Sparkles,
   LampDesk,
   X,
-  Cloud,
+  HardDrive,
   CloudRain,
   Sun,
   Moon,
@@ -64,7 +67,7 @@ import type { StatisticsPeriod } from "@/lib/music-statistics";
 import MusicStatistics from "./MusicStatistics";
 import ResidentPanel from './ResidentPanel';
 import { useRoomResident } from '@/lib/use-room-resident';
-import { supabase } from "@/lib/supabase";
+
 import { appearanceOf, colorPresets, type Appearance } from "@/domain/appearance";
 import FurnitureColorPanel from "./FurnitureColorPanel";
 import FurniturePreview from "./FurniturePreview";
@@ -72,7 +75,7 @@ import FurnitureInspector from "./FurnitureInspector";
 import MusicLibrary from "./MusicLibrary";
 import RoomStage from "./RoomStage";
 import AppNavigation from "./AppNavigation";
-import AccountPanel from "./AccountPanel";
+
 import SessionStrip from "./SessionStrip";
 import NotificationCenter from "./NotificationCenter";
 import { useNotifications } from "@/lib/use-notifications";
@@ -94,6 +97,8 @@ function mm(seconds: number) {
 }
 export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'}) {
   const r = useRoom();
+  const workshopCatalog = useWorkshopProducts();
+  const shopCatalog = useMemo(() => [...catalog,...workshopCatalog.products], [workshopCatalog.products]);
   const progress = useProgress();
   const growthActivities = useMemo(()=>skillActivities(progress.data),[progress.data]);
   const [growthTab,setGrowthTab]=useState<'skills'|'tasks'|'rewards'>('skills');
@@ -154,7 +159,7 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
   const restPlayer=useRef<HTMLElement>(null);
   const shell=useRef<HTMLDivElement>(null);
   useEffect(()=>{if(!restMode || !restPlayer.current)return;const player=restPlayer.current;const measure=()=>shell.current?.style.setProperty('--rest-player-height',`${player.getBoundingClientRect().height}px`);measure();const observer=new ResizeObserver(measure);observer.observe(player);return()=>observer.disconnect();},[restMode]);
-  useEffect(()=>{try {const saved=JSON.parse(localStorage.getItem('myroom:shop-favorites:v1')??'[]');if(Array.isArray(saved))setFavorites(saved.filter((id):id is string=>typeof id==='string'&&catalog.some(p=>p.id===id)));} catch {} setFavoritesReady(true);},[]);
+  useEffect(()=>{try {const saved=JSON.parse(localStorage.getItem('myroom:shop-favorites:v1')??'[]');if(Array.isArray(saved))setFavorites(saved.filter((id):id is string=>typeof id==='string'&&(id.startsWith('workshop:') || catalog.some(p=>p.id===id))));} catch {} setFavoritesReady(true);},[]);
   const toggleFavorite=(id:string)=>{const next=favorites.includes(id)?favorites.filter(value=>value!==id):[...favorites,id];try{localStorage.setItem('myroom:shop-favorites:v1',JSON.stringify(next));setFavorites(next);}catch{r.setNotice('Не удалось сохранить избранное на устройстве.');}};
   useEffect(()=>{if(!restMode)return;const overflow=document.body.style.overflow;document.body.style.overflow='hidden';restExit.current?.focus();const escape=(e:KeyboardEvent)=>{if(e.key==='Escape'){setRainOpen(false);setRestMode(false);}};window.addEventListener('keydown',escape);return()=>{document.body.style.overflow=overflow;window.removeEventListener('keydown',escape);restTrigger.current?.focus();};},[restMode]);
   const lastMusicVolume=useRef(.3);
@@ -273,24 +278,10 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
     const escape=(e:KeyboardEvent)=>{if(e.key==='Escape'&&!e.defaultPrevented&&!document.querySelector('dialog[open]')){if(window.location.pathname==='/graph')window.history.pushState(null,'','/room');setView('room');requestAnimationFrame(()=>dockReturn.current?.focus({preventScroll:true}));}};
     document.addEventListener('keydown',escape);return()=>document.removeEventListener('keydown',escape);
   },[view]);
-  const [accountRecovery,setAccountRecovery]=useState(false);
-  useEffect(()=>{
-    const url=new URL(window.location.href);
-    if(url.searchParams.get('account')){
-      setView('profile');
-      setAccountRecovery(url.searchParams.get('account')==='recovery');
-      url.searchParams.delete('account');
-      window.history.replaceState(null,'',url.pathname+url.search+url.hash);
-    }
-    const subscription=supabase?.auth.onAuthStateChange(event=>{
-      if(event==='PASSWORD_RECOVERY'){setAccountRecovery(true);setView('profile');}
-    });
-    return()=>subscription?.data.subscription.unsubscribe();
-  },[]);
   const [period, setPeriod] = useState<StatisticsPeriod>("7");
-  const products=useMemo(()=>catalog.filter(p=>category==='Все'||(category==='Избранное'?favorites.includes(p.id):category==='Новинки'?!!p.collection:category==='Игровая коллекция'?p.collection==='gaming'&&(gameFilter==='Все игры'||p.game===gameFilter):p.category===category))
+  const products=useMemo(()=>shopCatalog.filter(p=>category==='Все'||(category==='Избранное'?favorites.includes(p.id):category==='Новинки'?!!p.collection:category==='Игровая коллекция'?p.collection==='gaming'&&(gameFilter==='Все игры'||p.game===gameFilter):p.category===category))
     .filter(p=>[p.name,p.category,p.game??''].join(' ').toLocaleLowerCase('ru').replaceAll('ё','е').includes(search.trim().toLocaleLowerCase('ru').replaceAll('ё','е')))
-    .sort((a,b)=>sort==='price'?a.price-b.price:a.name.localeCompare(b.name,'ru')),[category,gameFilter,sort,search,favorites]);
+    .sort((a,b)=>sort==='price'?a.price-b.price:a.name.localeCompare(b.name,'ru')),[category,gameFilter,sort,search,favorites,shopCatalog]);
   const ownedCounts = new Map<string,number>();
   for(const owned of r.room.items)ownedCounts.set(owned.productId,(ownedCounts.get(owned.productId)??0)+1);
   const inventoryCategories = [...new Set(r.room.items.map(i => productOf(i).category))].sort((a,b) => a.localeCompare(b,'ru'));
@@ -681,6 +672,7 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
                   <div className="eyebrow">ВЕЩИ С ХАРАКТЕРОМ</div>
                   <h1>Чуть больше уюта.</h1>
                   <p>Собери комнату, в которую хочется возвращаться.</p>
+                  <Link href="/community" className="button small secondary">Сообщество и подборки</Link>
                 </div>
                 <button type="button" className="shop-favorites-entry" aria-pressed={category==='Избранное'} onClick={()=>setCategory(category==='Избранное'?'Все':'Избранное')}>
                   <span className="shop-favorites-icon"><Heart size={20} strokeWidth={1.75} fill={category==='Избранное'?'currentColor':'none'}/></span>
@@ -721,6 +713,7 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
                 <div><strong>Любимые миры, своя комната.</strong><p>Фигурки — на полки и столики. Постеры — на стену.</p></div>
                 <div className="tabs" aria-label="Фильтр по игре">{['Все игры',...games].map(game=><button key={game} className={gameFilter===game?'selected':''} aria-pressed={gameFilter===game} onClick={()=>setGameFilter(game)}>{game}</button>)}</div>
               </section>}
+              {workshopCatalog.error && <p role="alert">{workshopCatalog.error}</p>}
               {products.length===0&&<div className="search-empty"><Search size={24} aria-hidden="true"/><h2>{category==='Избранное' && !favorites.length?'Здесь будут любимые вещи':'Пока ничего не нашлось'}</h2><p>{category==='Избранное' && !favorites.length?'Нажми на сердечко у вещи в магазине — она появится здесь.':'Попробуй другое название или сбрось фильтры.'}</p><button className="button secondary" onClick={()=>{setSearch('');setCategory('Все');setGameFilter('Все игры');}}>Показать все вещи</button></div>}
               <div className="product-grid">
                 {products.map((p) => (
@@ -734,6 +727,7 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
                       </div>
                       <small>{p.category}{p.game ? ` · ${p.game}` : p.collection ? " · Новинка" : ""}</small>
                       <h3>{p.name}</h3>
+                      <Link href={`/catalog/${encodeURIComponent(p.id)}`} className="button small secondary">Отзывы и обсуждение</Link>
                       <small className="owned-count tabular-nums">У тебя: {ownedCounts.get(p.id)??0}</small>
                       <div className="product-bottom tabular-nums">
                         <span>
@@ -822,8 +816,8 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
           {view === "stats" && <MusicStatistics music={music.music} period={period} onPeriod={setPeriod}
             playing={music.playing} currentId={music.current.id} onPlay={music.play} onBrowse={() => setView("music")} />}
           {view === "profile" && <>
-            <div className="page-heading"><div><div className="eyebrow">ЛИЧНОЕ ПРОСТРАНСТВО</div><h1>{r.user?'Мой профиль.':'Добро пожаловать.'}</h1><p>Пусть твоя комната всегда будет рядом.</p></div></div>
-            {!r.loaded ? <p role="status">Открываем профиль…</p> : <AccountPanel key={`${r.user?.id??'guest'}:${accountRecovery}`} user={r.user} recovery={accountRecovery} onRecovered={()=>setAccountRecovery(false)} balance={r.room.balance} items={r.room.items.length} activeMs={r.room.activeMs}/>}
+            <div className="page-heading"><h1>Мой профиль</h1></div>
+            <LocalAccountPanel/>
           </>}
           {view === "settings" && (
             <>
@@ -837,10 +831,10 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
               <div className="settings-grid">
                 <ThemeSelector />
                 <section className="settings-card">
-                  <Cloud size={16} strokeWidth={1.75}/>
-                  <h2>Твой аккаунт</h2>
-                  <p>{r.user?'Имя, аватар и облачная комната — в твоём профиле.':'Зарегистрируйся, чтобы сохранять комнату и покупки между устройствами.'}</p>
-                  <button className="button primary" onClick={()=>setView('profile')}>{r.user?'Открыть профиль':'Вход и регистрация'}</button>
+                  <HardDrive size={16} strokeWidth={1.75}/>
+                  <h2>Локальное сохранение</h2>
+                  <p>Комната, покупки, музыка и прогресс остаются в этом браузере. Аккаунт определяет доступ к мастерской.</p>
+                  <button className="button primary" onClick={()=>setView('profile')}>О сохранении</button>
                 </section>
                 <section className="settings-card">
                   <Volume2 size={16}  strokeWidth={1.75}/>
@@ -866,9 +860,9 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
                   <p className="footnote">
                     Рабочая версия · {packageInfo.version}
                     <br />
-                    Комната и экономика — облако после входа.
+                    Комната и монеты — на этом устройстве.
                     <br />
-                    Музыка и плейлисты — облако после входа. Статистика — на
+                    Музыка, плейлисты и статистика — на
                     этом устройстве.
                   </p>
                 </section>

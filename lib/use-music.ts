@@ -1,4 +1,5 @@
 "use client";
+import { browserId } from '@/lib/browser-id';
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   MusicState,
@@ -17,6 +18,7 @@ import { audioFingerprint, findDuplicateAudio, duplicateNotice } from "./music-d
 import { listenThreshold } from "@/domain/model";
 import {MusicSpectrum} from './music-spectrum';
 import {SPECTRUM_BANDS} from '@/domain/live-details';
+import { loadWorkshopTracks, mergeWorkshopMusic, workshopMusicEvent } from './workshop-music';
 import {
   musicRequest,
   mergeCloudMusic,
@@ -79,6 +81,7 @@ export function useMusic(owner: string, notify: (s: string) => void) {
         if (!cancelled) revision.current = remote.library.revision;
         return mergeCloudMusic(s, remote);
       })
+      .then(async (s) => mergeWorkshopMusic(s, await loadWorkshopTracks()))
       .then((s) => {
         if (!cancelled) {
           setMusic(s);
@@ -96,6 +99,18 @@ export function useMusic(owner: string, notify: (s: string) => void) {
       audio.current?.pause();
     };
   }, [owner, cloud, reload]);
+  useEffect(() => {
+    if (!ready) return;
+    let cancelled = false;
+    const refresh = () => { void loadWorkshopTracks().then(tracks => {
+      if (!cancelled) setMusic(s => mergeWorkshopMusic(s, tracks));
+    }).catch(() => notifyRef.current('Не удалось обновить музыку мастерской')); };
+    const storage = (e: StorageEvent) => { if (e.key === workshopMusicEvent) refresh(); };
+    window.addEventListener(workshopMusicEvent, refresh);
+    window.addEventListener('focus', refresh);
+    window.addEventListener('storage', storage);
+    return () => { cancelled = true; window.removeEventListener(workshopMusicEvent, refresh); window.removeEventListener('focus', refresh); window.removeEventListener('storage', storage); };
+  }, [ready, owner]);
   useEffect(() => {
     if (ready)
       void saveMusic(owner, music).catch(() =>
@@ -259,7 +274,7 @@ export function useMusic(owner: string, notify: (s: string) => void) {
       if (cancelled) return;
       setPlaying(true);
       activated.current = true;
-      musicLock.current = crypto.randomUUID();
+      musicLock.current = browserId();
       try { localStorage.setItem("myroom:music-lock:" + owner, JSON.stringify({ id: musicLock.current })); } catch {}
       previous.current = { wall: performance.now(), media: a.currentTime };
     });
@@ -409,7 +424,7 @@ export function useMusic(owner: string, notify: (s: string) => void) {
         }
         if (duration <= 0) throw Error("Пустой аудиофайл");
         let track: Track = {
-          id: crypto.randomUUID(),
+          id: browserId(),
           title: file.name.replace(/\.[^.]+$/, "").slice(0, 160),
           duration,
           size: file.size,
@@ -468,6 +483,7 @@ export function useMusic(owner: string, notify: (s: string) => void) {
     }
   };
   const remove = async (id: string) => {
+    if (state.current.tracks.find(t => t.id === id)?.workshop) { notify('Этот трек опубликован в мастерской.'); return; }
     if (id === "builtin-evening" || !ready || mutation.current) return;
     if (
       !confirm(

@@ -1,4 +1,5 @@
 'use client';
+import { browserId } from '@/lib/browser-id';
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type FormEvent } from 'react';
 import { Archive, ArrowLeft, BookOpen, Check, Code2, Dumbbell, HardDrive, Languages, ListTodo, Music2, Palette, Pencil, Plus, Sprout, Trash2, TrendingUp, X } from 'lucide-react';
 import { behaviors, difficulties, levelProgress, rewardTemplates, skillColors, skillIcons, skillTemplates, skillXp, type Difficulty, type Goal, type Skill, type SkillDraft, type Task, type TaskDraft } from '@/domain/progress';
@@ -131,9 +132,9 @@ export default function ProgressPanel({ progress, onPractice, onCompleted, onGra
     <p className="progress-local-note"><HardDrive size={16} /><span>Прогресс сохраняется в этом браузере. Опыт навыков и монеты комнаты учитываются отдельно.</span></p>
     {modal && <ProgressDialog title={modalTitle} close={close}>
       {error && <p className="progress-error" role="alert">{error}</p>}
-      {modal.kind === 'skill' && <SkillForm skill={modal.skill} template={modal.template} busy={busy} close={close} save={async draft => { if (await command(modal.skill ? { kind: 'editSkill', id: modal.skill.id, draft } : { kind: 'addSkill', id: crypto.randomUUID(), draft })) showSuccess(modal.skill ? 'Навык обновлён.' : `Навык «${draft.name.trim()}» создан. Добавь первый шаг во вкладке «Задачи».`); }} />}
+      {modal.kind === 'skill' && <SkillForm skill={modal.skill} template={modal.template} busy={busy} close={close} save={async draft => { if (await command(modal.skill ? { kind: 'editSkill', id: modal.skill.id, draft } : { kind: 'addSkill', id: browserId(), draft })) showSuccess(modal.skill ? 'Навык обновлён.' : `Навык «${draft.name.trim()}» создан. Добавь первый шаг во вкладке «Задачи».`); }} />}
       {modal.kind === 'task' && <TaskForm task={modal.task} skills={data.skills} goals={data.goals??[]} initialSkill={activeSkills.some(s => s.id === skillFilter) ? skillFilter : activeSkills[0]?.id ?? ''} busy={busy} close={close} save={async draft => {
-        if (await command(modal.task ? { kind: 'editTask', id: modal.task.id, draft } : { kind: 'addTask', id: crypto.randomUUID(), draft, at: new Date().toISOString() })) {
+        if (await command(modal.task ? { kind: 'editTask', id: modal.task.id, draft } : { kind: 'addTask', id: browserId(), draft, at: new Date().toISOString() })) {
           if (!modal.task) { setSkillFilter(draft.skillId); setStatusFilter('planned');setGoalFilter('all'); }
           showSuccess(modal.task ? 'Задача обновлена.' : 'Новый шаг запланирован.');
         }

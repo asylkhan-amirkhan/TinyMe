@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { Product } from "@/domain/model";
 import { furniturePreview } from "@/engine/isometric";
 import {subscribePosterArt} from '@/engine/poster-assets';
+import Image from 'next/image';
 export default function FurniturePreview({ product, color }: { product: Product; color?: string | null }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -16,6 +17,7 @@ export default function FurniturePreview({ product, color }: { product: Product;
     return unsubscribe;
   }, [product, color]);
   return (
+    product.image ? <Image unoptimized src={product.image} alt={product.name} width={192} height={192} style={{objectFit:'contain'}}/> :
     <canvas
       ref={ref}
       width={192}

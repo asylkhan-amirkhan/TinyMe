@@ -1,4 +1,5 @@
 "use client";
+import { browserId } from '@/lib/browser-id';
 import { useCallback, useEffect, useRef, useState } from "react";
 import { validFurnitureColor } from "@/domain/furniture-color";
 import { validAppearance } from "@/domain/appearance";
@@ -15,6 +16,7 @@ import {
 import { supabase, rpc, errorMessage } from "./supabase";
 import { BackgroundSession, type ActivitySnapshot } from "./background-session";
 import { furnishStudio } from '@/domain/studio-layout';
+import { readWorkshopProducts, buyWorkshopProduct } from '@/domain/workshop-catalog';
 export function useRoom() {
   const [room, setRoom] = useState<RoomData>(initialRoom);
   const [user, setUser] = useState<User | null>(null);
@@ -112,9 +114,9 @@ export function useRoom() {
     const clock = new BackgroundSession({
       cloud: !!user,
       now: () => performance.now(),
-      id: () => crypto.randomUUID(),
+      id: () => browserId(),
       request: (action, id, seq) => rpc<ActivitySnapshot>("activity", {
-        p_operation: crypto.randomUUID(), p_session: id, p_action: action, p_seq: seq,
+        p_operation: browserId(), p_session: id, p_action: action, p_seq: seq,
       }),
       elapsed: delta => { if (live) setRoom(s => accrue(s, delta)); },
       snapshot: data => {
@@ -217,7 +219,7 @@ export function useRoom() {
     setStatus("Сохраняется…");
     try {
       if (user) {
-        const op = crypto.randomUUID();
+        const op = browserId();
         const body = { ...payload, revision: state.current.revision };
         const pending = { op, kind, body, userId: user.id };
         localStorage.setItem(
@@ -251,7 +253,11 @@ export function useRoom() {
         const s = state.current;
         let next = { ...s, revision: s.revision + 1, items: [...s.items] };
         if (kind === "purchase") {
-          const p = catalog.find((p) => p.id === payload.productId)!;
+          const p = [...catalog, ...readWorkshopProducts(localStorage)].find((p) => p.id === payload.productId);
+          if (!p) throw Error('Вещь больше не доступна в магазине');
+          if (p.id.startsWith('workshop:')) {
+            next = buyWorkshopProduct(s, p, browserId());
+          } else {
           if (s.balance < p.price) throw Error("INSUFFICIENT_FUNDS");
           next = {
             ...next,
@@ -259,7 +265,7 @@ export function useRoom() {
             items: [
               ...s.items,
               {
-                id: crypto.randomUUID(),
+                id: browserId(),
                 productId: p.id,
                 x: null,
                 y: null,
@@ -268,6 +274,7 @@ export function useRoom() {
               },
             ],
           };
+          }
         } else if (kind === "appearance") {
           if (!validAppearance(payload.appearance)) throw Error("Выберите допустимые цвета");
           next = { ...next, appearance: payload.appearance };

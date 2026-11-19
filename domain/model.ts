@@ -1,4 +1,5 @@
 import type { Appearance } from './appearance';
+import { validWorkshopImage } from './workshop';
 import { furnishStudio } from './studio-layout';
 import {gamingCollection,type Game} from './gaming-collection';
 export type Kind =
@@ -20,6 +21,7 @@ export type Kind =
   | "books"
   | "collectible";
 export type Product = {
+  image?: string;
   id: string;
   name: string;
   category: string;
@@ -185,6 +187,8 @@ catalog.push(
   {id:'vase-mini',name:'Ваза «Капля»',category:'Декор',price:9,w:1,h:1,kind:'vase',color:'#9caec0',surface:'floor',collection:'quiet-evening'},
 );
 export type Item = {
+  /** A purchased local workshop item keeps its definition across catalogue edits. */
+  workshopProduct?: Product;
   id: string;
   productId: string;
   x: number | null;
@@ -271,6 +275,14 @@ export function initialRoom(): RoomData {
   });
 }
 export function productOf(item: Item) {
+  const custom = item.workshopProduct;
+  if (custom && custom.id === item.productId && custom.id.startsWith('workshop:')
+    && typeof custom.name === 'string' && custom.name.length <= 100 && typeof custom.category === 'string'
+    && Number.isInteger(custom.w) && custom.w >= 1 && custom.w <= 12 && Number.isInteger(custom.h) && custom.h >= 1 && custom.h <= 8
+    && Number.isInteger(custom.price) && custom.price >= 0 && custom.price <= 1000000
+    && ['plant','lamp','shelf','armchair','sofa','vase','bed','desk','chair'].includes(custom.kind)
+    && custom.surface === 'floor' && /^#[0-9a-f]{6}$/i.test(custom.color)
+    && (custom.image === undefined || validWorkshopImage(custom.image))) return custom;
   const p = catalog.find((p) => p.id === item.productId);
   if (!p) throw Error("Неизвестная мебель");
   return p;

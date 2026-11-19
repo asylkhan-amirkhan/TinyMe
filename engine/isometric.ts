@@ -996,7 +996,7 @@ export function furniturePreview(product: Product, color?: string | null, rotati
   source.width = source.height = 768;
   const ctx = source.getContext("2d", {willReadFrequently:true})!;
   ctx.translate(384-SCENE.ox,384-SCENE.oy);
-  furniture(ctx,{id:"preview",color,productId:product.id,x:0,y:0,rotation,on:true});
+  furniture(ctx,{id:"preview",color,productId:product.id,workshopProduct:product.id.startsWith("workshop:")?product:undefined,x:0,y:0,rotation,on:true});
   const pixels=ctx.getImageData(0,0,768,768).data;
   let left=768,top=768,right=0,bottom=0;
   for(let y=0;y<768;y++)for(let x=0;x<768;x++){
@@ -1015,7 +1015,7 @@ export function furniturePreview(product: Product, color?: string | null, rotati
   }
   // Redraw vectors at the fitted scale, keeping small objects sharp.
   g.translate(384-SCENE.ox,384-SCENE.oy);
-  furniture(g,{id:"preview",color,productId:product.id,x:0,y:0,rotation,on:true});
+  furniture(g,{id:"preview",color,productId:product.id,workshopProduct:product.id.startsWith("workshop:")?product:undefined,x:0,y:0,rotation,on:true});
 
   return c;
 }

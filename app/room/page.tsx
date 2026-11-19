@@ -1,2 +1,3 @@
 import MyRoom from "@/components/MyRoom";
-export default function RoomPage() { return <MyRoom />; }
+import LocalAccess from '@/components/LocalAccess';
+export default function RoomPage() { return <LocalAccess><MyRoom /></LocalAccess>; }
