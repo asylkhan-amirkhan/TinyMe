@@ -1,9 +1,9 @@
-import { ShopShell } from "@/features/shop/shop-shell";
-﻿import type { Metadata } from "next";
-import { PageHeading } from "@/components/ui/page-heading";
-import { Shop } from "@/features/shop/shop";
+import type { Metadata } from "next";
+import LocalAccess from "@/components/LocalAccess";
+import MyRoom from "@/components/MyRoom";
 
-export const metadata: Metadata = { title: "Магазин" };
+export const metadata: Metadata = { title: "Магазин · tiny me" };
+
 export default function ShopPage() {
-  return <ShopShell><PageHeading eyebrow="Маленькие находки" title="Магазин" description="Собирайте избранное и покупайте вещи для своей комнаты за виртуальные монеты."/><Shop/></ShopShell>;
+  return <LocalAccess><MyRoom initialView="shop" /></LocalAccess>;
 }

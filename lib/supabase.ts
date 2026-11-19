@@ -1,14 +1,20 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { localOnly } from "@/config/runtime";
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-let client: SupabaseClient | null = null;
-// The separate account shop is opt-in; the room retains its local-only mode.
+const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const cloudKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || key;
+export const supabase =
+  !localOnly && url && cloudKey ? createClient(url, cloudKey) : null;
+
+let shopClient: SupabaseClient | null = null;
 export function getSupabase() {
-  if (!url || !key) return null;
-  return client ??= createClient(url, key);
+  const shopKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || key;
+  if (!url || !shopKey) return null;
+  shopClient ??= createClient(url, shopKey);
+  return shopClient;
 }
-export const supabase = localOnly ? null : getSupabase();
 export async function rpc<T>(
   name: string,
   args: Record<string, unknown> = {},

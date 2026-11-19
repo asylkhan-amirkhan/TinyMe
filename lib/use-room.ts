@@ -1,4 +1,5 @@
 "use client";
+import { browserId } from "@/lib/browser-id";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { validFurnitureColor } from "@/domain/furniture-color";
 import { validAppearance } from "@/domain/appearance";
@@ -9,8 +10,10 @@ import {
   accrue,
   catalog,
   placementError,
+  productOf,
   mergeRoom,
   removeItem,
+  type WallSide,
 } from "@/domain/model";
 import { supabase, rpc, errorMessage } from "./supabase";
 import { BackgroundSession, type ActivitySnapshot } from "./background-session";
@@ -138,9 +141,9 @@ export function useRoom() {
     const clock = new BackgroundSession({
       cloud: !!user,
       now: () => performance.now(),
-      id: () => crypto.randomUUID(),
+      id: () => browserId(),
       request: (action, id, seq) => rpc<ActivitySnapshot>("activity", {
-        p_operation: crypto.randomUUID(), p_session: id, p_action: action, p_seq: seq,
+        p_operation: browserId(), p_session: id, p_action: action, p_seq: seq,
       }),
       elapsed: delta => { if (live) setRoom(s => accrue(s, delta)); },
       snapshot: data => {
@@ -243,7 +246,7 @@ export function useRoom() {
     setStatus("Сохраняется…");
     try {
       if (user) {
-        const op = crypto.randomUUID();
+        const op = browserId();
         const body = { ...payload, revision: state.current.revision };
         const pending = { op, kind, body, userId: user.id };
         localStorage.setItem(
@@ -281,7 +284,7 @@ export function useRoom() {
           const p = [...catalog, ...readWorkshopProducts(localStorage)].find((p) => p.id === payload.productId);
           if (!p) throw Error('Вещь больше не доступна в магазине');
           if (p.id.startsWith('workshop:')) {
-            next = buyWorkshopProduct(s, p, crypto.randomUUID());
+            next = buyWorkshopProduct(s, p, browserId());
           } else {
           if (s.balance < p.price) throw Error("INSUFFICIENT_FUNDS");
           next = {
@@ -290,7 +293,7 @@ export function useRoom() {
             items: [
               ...s.items,
               {
-                id: crypto.randomUUID(),
+                id: browserId(),
                 productId: p.id,
                 x: null,
                 y: null,
@@ -307,6 +310,9 @@ export function useRoom() {
           const item = s.items.find((i) => i.id === payload.id);
           if (!item) throw Error("Предмет не найден");
           if (kind === "color" && !validFurnitureColor(payload.color)) throw Error("Выберите допустимый цвет мебели");
+          const isWallPlacement = kind === 'place' && productOf(item).surface === 'wall';
+          const wallHeight = isWallPlacement && payload.wallHeight !== undefined ? Number(payload.wallHeight) : item.wallHeight;
+          const wallSide = isWallPlacement && payload.wallSide !== undefined ? payload.wallSide as WallSide : item.wallSide;
           if (kind === "place") {
             const err = placementError(
               s.items,
@@ -316,6 +322,8 @@ export function useRoom() {
               Number(payload.rotation),
               payload.parentId === undefined ? item.parentId ?? null : payload.parentId === null ? null : String(payload.parentId),
               payload.supportLevel === undefined ? (payload.parentId !== undefined && payload.parentId !== (item.parentId ?? null) ? 0 : item.supportLevel ?? 0) : Number(payload.supportLevel),
+              wallHeight,
+              wallSide,
             );
             if (err) throw Error(err);
           }
@@ -333,6 +341,8 @@ export function useRoom() {
                       x: Number(payload.x),
                       y: Number(payload.y),
                       rotation: Number(payload.rotation),
+                      ...(wallHeight === undefined ? {} : { wallHeight }),
+                      ...(wallSide === undefined ? {} : { wallSide }),
                       parentId: payload.parentId === undefined ? item.parentId ?? null : payload.parentId === null ? null : String(payload.parentId),
                       supportLevel: payload.supportLevel === undefined ? (payload.parentId !== undefined && payload.parentId !== (item.parentId ?? null) ? 0 : item.supportLevel ?? 0) : Number(payload.supportLevel),
                     },

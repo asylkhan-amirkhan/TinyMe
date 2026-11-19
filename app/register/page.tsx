@@ -1,2 +1,6 @@
 import LocalAuthForm from '@/components/LocalAuthForm';
-export default function RegisterPage() { return <LocalAuthForm register/>; }
+import { localReturnPath } from '@/lib/local-auth';
+
+export default async function RegisterPage({ searchParams }: PageProps<'/register'>) {
+  return <LocalAuthForm register next={localReturnPath((await searchParams).next)} />;
+}

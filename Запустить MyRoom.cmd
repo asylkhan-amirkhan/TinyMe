@@ -1,4 +1,4 @@
 @echo off
 cd /d "%~dp0"
-if not exist node_modules call npm.cmd ci
-call npm.cmd run dev
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\start-local.ps1"
+if errorlevel 1 pause

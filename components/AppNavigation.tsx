@@ -56,7 +56,7 @@ export default function AppNavigation({
           <span className="wallet-orbit"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17"/><circle cx="20" cy="20" r="17" strokeDasharray={`${(displayMs%60000)/60000*106.81} 106.81`}/></svg><Coins size={16} aria-hidden="true" strokeWidth={1.75}/></span>
           <strong key={balance}>{balance}</strong>
         </span>
-        <button className="studio-settings" aria-label={localOnly ? 'Локальный профиль' : cloud ? 'Мой профиль' : 'Вход и регистрация'} title={cloud?'Мой профиль':'Вход и регистрация'} aria-current={view==='profile'?'page':undefined} onClick={()=>onNavigate('profile')}><UserRound size={20} strokeWidth={1.75}/></button>
+        <button className="studio-settings" aria-label={localOnly ? 'Мой профиль' : cloud ? 'Мой профиль' : 'Вход и регистрация'} title={cloud?'Мой профиль':'Вход и регистрация'} aria-current={view==='profile'?'page':undefined} onClick={()=>onNavigate('profile')}><UserRound size={20} strokeWidth={1.75}/></button>
         <button
           className="studio-settings"
           aria-label="Настройки"

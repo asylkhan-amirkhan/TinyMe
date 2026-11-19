@@ -1,4 +1,5 @@
 "use client";
+import { browserId } from '@/lib/browser-id';
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   MusicState,
@@ -273,7 +274,7 @@ export function useMusic(owner: string, notify: (s: string) => void) {
       if (cancelled) return;
       setPlaying(true);
       activated.current = true;
-      musicLock.current = crypto.randomUUID();
+      musicLock.current = browserId();
       try { localStorage.setItem("myroom:music-lock:" + owner, JSON.stringify({ id: musicLock.current })); } catch {}
       previous.current = { wall: performance.now(), media: a.currentTime };
     });
@@ -423,7 +424,7 @@ export function useMusic(owner: string, notify: (s: string) => void) {
         }
         if (duration <= 0) throw Error("Пустой аудиофайл");
         let track: Track = {
-          id: crypto.randomUUID(),
+          id: browserId(),
           title: file.name.replace(/\.[^.]+$/, "").slice(0, 160),
           duration,
           size: file.size,

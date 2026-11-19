@@ -2,7 +2,6 @@
 import dynamic from "next/dynamic";
 import packageInfo from "../package.json";
 import ThemeSelector from "./ThemeSelector";
-import { useWorkshopProducts } from "@/lib/use-workshop-products";
 import LocalAccountPanel from "./LocalAccountPanel";
 import ProgressPanel from "./ProgressPanel";
 import { useProgress } from '@/lib/use-progress';
@@ -11,7 +10,6 @@ import { graphHref, milestoneNodeId, type GraphContext } from '@/domain/progress
 import { useEffect, useState, useCallback, useLayoutEffect, useRef, useMemo } from "react";
 import {
   Search,
-  Heart,
   Snowflake,
   Music2,
   Coins,
@@ -42,11 +40,11 @@ import {
   Undo2,
 } from "lucide-react";
 import { showcaseItems } from "@/engine/isometric";
-import {initialPlacement} from '@/domain/drag';
-import {games} from '@/domain/gaming-collection';
+import {availablePlacement, initialPlacement} from '@/domain/drag';
+import { defaultShopFilters, isShopPath, readShopFilters, shopCardId, shopCardTarget, shopHref, shopProductId, shopProductPath, type ShopFilters } from '@/domain/shop';
 import {posterArt} from '@/engine/poster-assets';
 import type {Product} from '@/domain/model';
-import { catalog, productOf, placementError, Item, type Placement } from "@/domain/model";
+import { productOf, placementError, Item, type Placement } from "@/domain/model";
 import { usePlacementHistory } from '@/lib/use-placement-history';
 import { useRoom } from "@/lib/use-room";
 import { useAtmosphere } from "@/lib/use-atmosphere";
@@ -74,6 +72,7 @@ import FurnitureInspector from "./FurnitureInspector";
 import MusicLibrary from "./MusicLibrary";
 import RoomStage from "./RoomStage";
 import AppNavigation from "./AppNavigation";
+import RoomShop from "./RoomShop";
 
 import SessionStrip from "./SessionStrip";
 import NotificationCenter from "./NotificationCenter";
@@ -94,10 +93,8 @@ const RoomCanvas = dynamic(() => import("./RoomCanvas"), {
 function mm(seconds: number) {
   return `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
 }
-export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'}) {
+export default function MyRoom({ initialView = 'room', initialProductId }: { initialView?: 'room' | 'graph' | 'shop'; initialProductId?: string }) {
   const r = useRoom();
-  const workshopCatalog = useWorkshopProducts();
-  const shopCatalog = useMemo(() => [...catalog,...workshopCatalog.products], [workshopCatalog.products]);
   const progress = useProgress();
   const growthActivities = useMemo(()=>skillActivities(progress.data),[progress.data]);
   const [growthTab,setGrowthTab]=useState<'skills'|'tasks'|'rewards'>('skills');
@@ -118,8 +115,6 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
   const atmosphere=useAtmosphere({lighting,season,accentLights,rain,storm,wind},r.setNotice);
   const [rainOpen,setRainOpen]=useState(false);
   const music = useMusic(r.user?.id ?? "guest", r.setNotice);
-  const [favorites,setFavorites]=useState<string[]>([]);
-  const [favoritesReady,setFavoritesReady]=useState(false);
   const [restMode,setRestMode]=useState(false);
   const [restVolumeOpen,setRestVolumeOpen]=useState(false);
   useEffect(()=>{
@@ -158,21 +153,32 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
   const restPlayer=useRef<HTMLElement>(null);
   const shell=useRef<HTMLDivElement>(null);
   useEffect(()=>{if(!restMode || !restPlayer.current)return;const player=restPlayer.current;const measure=()=>shell.current?.style.setProperty('--rest-player-height',`${player.getBoundingClientRect().height}px`);measure();const observer=new ResizeObserver(measure);observer.observe(player);return()=>observer.disconnect();},[restMode]);
-  useEffect(()=>{try {const saved=JSON.parse(localStorage.getItem('myroom:shop-favorites:v1')??'[]');if(Array.isArray(saved))setFavorites(saved.filter((id):id is string=>typeof id==='string'&&(id.startsWith('workshop:') || catalog.some(p=>p.id===id))));} catch {} setFavoritesReady(true);},[]);
-  const toggleFavorite=(id:string)=>{const next=favorites.includes(id)?favorites.filter(value=>value!==id):[...favorites,id];try{localStorage.setItem('myroom:shop-favorites:v1',JSON.stringify(next));setFavorites(next);}catch{r.setNotice('Не удалось сохранить избранное на устройстве.');}};
   useEffect(()=>{if(!restMode)return;const overflow=document.body.style.overflow;document.body.style.overflow='hidden';restExit.current?.focus();const escape=(e:KeyboardEvent)=>{if(e.key==='Escape'){setRainOpen(false);setRestMode(false);}};window.addEventListener('keydown',escape);return()=>{document.body.style.overflow=overflow;window.removeEventListener('keydown',escape);restTrigger.current?.focus();};},[restMode]);
   const lastMusicVolume=useRef(.3);
   useEffect(()=>{if(music.music.volume>0)lastMusicVolume.current=music.music.volume;},[music.music.volume]);
   const [view, setView] = useState<string>(initialView);
+  const [productId, setProductId] = useState(initialProductId);
+  const [shopFilters, setShopFilters] = useState(defaultShopFilters);
+  const [shopReturnTarget, setShopReturnTarget] = useState<string>();
   const [graphContext,setGraphContext]=useState<GraphContext>({});
-  useEffect(()=>{
+  useLayoutEffect(()=>{
     const read=()=>{
       const url=new URL(window.location.href);
-      if(url.pathname==='/graph') {
+      if (isShopPath(url.pathname)) {
+        setProductId(shopProductId(url.pathname));
+        setShopFilters(readShopFilters(url.searchParams));
+        setShopReturnTarget(shopCardTarget(url.hash));
+        setView('shop');
+      } else if(url.pathname==='/graph') {
         setGraphContext({skill:url.searchParams.get('skill')||undefined,focus:url.searchParams.get('focus')||undefined});
         setView('graph');
       } else if(url.pathname==='/room') {
+        setProductId(undefined);
         const desired=url.searchParams.get('view');
+        if (desired === 'shop') {
+          setShopFilters(readShopFilters(url.searchParams));
+          setShopReturnTarget(shopCardTarget(url.hash));
+        }
         setView(desired&&['progress','shop','inventory','music','stats','profile','settings'].includes(desired)?desired:'room');
       }
     };
@@ -184,24 +190,21 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
     const context={skill,focus};
     window.history.pushState(null,'',graphHref(context));setGraphContext(context);setView('graph');
   };
-  const [search,setSearch]=useState('');
   const [inventorySearch,setInventorySearch]=useState('');
   const [inventoryStatus,setInventoryStatus]=useState('Все');
   const [inventoryCategory,setInventoryCategory]=useState('Все категории');
   const [inventorySort,setInventorySort]=useState('newest');
-  const previousView=useRef(view);
+  const panelLocation = view === 'shop' && productId !== undefined ? shopProductPath(productId) : view;
+  const previousView=useRef(panelLocation);
   useLayoutEffect(()=>{
-    if(previousView.current===view)return;
-    previousView.current=view;
+    if(previousView.current===panelLocation)return;
+    previousView.current=panelLocation;
     window.scrollTo({top:0,behavior:'instant'});
     document.getElementById('main-content')?.scrollTo({top:0,behavior:'instant'});
     const heading=document.querySelector<HTMLElement>(view==='room'?'.room-heading h1':'main h1');
     if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}
-  },[view]);
-  const [category, setCategory] = useState("Все");
-  const [gameFilter,setGameFilter]=useState('Все игры');
+  },[view, panelLocation]);
   const [inspect,setInspect]=useState<{product:Product;color?:string|null}|null>(null);
-  const [sort, setSort] = useState("price");
   const [selected, setSelected] = useState<string | null>(null);
   const [draft, setDraft] = useState<Placement | null>(null);
   const [furnitureColor, setFurnitureColor] = useState<{id:string;color:string|null} | null>(null);
@@ -220,6 +223,7 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
     const outside=(event:Event)=>{
       const panel=activePanel(),target=event.target as Element;
       if(!panel || !target.isConnected || panel.contains(target) || target.closest('[role="listbox"], .rain-panel, .resident-wardrobe'))return;
+      if(panel.id==='furniture-colors' && target.closest('.resident-growth-panel'))return;
       if(panel.id && target.closest(`[aria-controls="${panel.id}"]`))return;
       close(panel,false);
     };
@@ -264,23 +268,42 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
   },[view,restMode,draft,r.busy,moves]);
   const [islandOpen,setIslandOpen]=useState(false);
   const dockReturn=useRef<HTMLElement|null>(null);
-  const navigate=(next:string)=>{
-    if(window.location.pathname==='/graph'||new URL(window.location.href).searchParams.has('view'))window.history.pushState(null,'','/room'+(next==='room'?'':`?view=${encodeURIComponent(next)}`));
+  const navigate=(next:string,nextProductId?:string)=>{
+    const url = new URL(window.location.href);
+    if (next === 'shop') {
+      const returnTo = nextProductId === undefined && view === 'shop' ? productId : undefined;
+      const path = shopHref(shopFilters, nextProductId, returnTo);
+      if (url.pathname === '/room' && view !== 'room' && !url.searchParams.has('view')) {
+        window.history.replaceState(null, '', `/room?view=${encodeURIComponent(view)}`);
+      }
+      if (nextProductId !== undefined && view === 'shop' && productId === undefined) {
+        window.history.replaceState(null, '', shopHref(shopFilters, undefined, nextProductId));
+      }
+      if (url.pathname + url.search + url.hash !== path) window.history.pushState(null, '', path);
+      setProductId(nextProductId);
+      setShopReturnTarget(returnTo === undefined ? undefined : shopCardId(returnTo));
+    } else if (url.pathname === '/graph' || isShopPath(url.pathname) || url.searchParams.has('view')) {
+      const path = next === 'room' ? '/room' : `/room?view=${encodeURIComponent(next)}`;
+      if (url.pathname + url.search !== path) window.history.pushState(null, '', path);
+      setProductId(undefined);
+    }
     if(next==='progress'){setGrowthTab('skills');setFocusedReward(undefined);}
     dockReturn.current=document.activeElement as HTMLElement;
     if(next!=='room'){setExpanded(false);setSelected(null);setDraft(null);setRainOpen(false);setColorDraft(null);setFurnitureColor(null);}
     setView(next);
   };
+  const updateShopFilters = (filters: ShopFilters) => {
+    window.history.replaceState(null, '', shopHref(filters));
+    setShopFilters(filters);
+    setShopReturnTarget(undefined);
+  };
   useEffect(()=>{const prior=document.body.style.overflow;document.body.style.overflow='hidden';return()=>{document.body.style.overflow=prior;};},[]);
   useEffect(()=>{
     if(view==='room')return;
-    const escape=(e:KeyboardEvent)=>{if(e.key==='Escape'&&!e.defaultPrevented&&!document.querySelector('dialog[open]')){if(window.location.pathname==='/graph')window.history.pushState(null,'','/room');setView('room');requestAnimationFrame(()=>dockReturn.current?.focus({preventScroll:true}));}};
+    const escape=(e:KeyboardEvent)=>{if(e.key==='Escape'&&!e.defaultPrevented&&!document.querySelector('dialog[open]')){if(window.location.pathname==='/graph'||isShopPath(window.location.pathname))window.history.pushState(null,'','/room');setProductId(undefined);setView('room');requestAnimationFrame(()=>dockReturn.current?.focus({preventScroll:true}));}};
     document.addEventListener('keydown',escape);return()=>document.removeEventListener('keydown',escape);
   },[view]);
   const [period, setPeriod] = useState<StatisticsPeriod>("7");
-  const products=useMemo(()=>shopCatalog.filter(p=>category==='Все'||(category==='Избранное'?favorites.includes(p.id):category==='Новинки'?!!p.collection:category==='Игровая коллекция'?p.collection==='gaming'&&(gameFilter==='Все игры'||p.game===gameFilter):p.category===category))
-    .filter(p=>[p.name,p.category,p.game??''].join(' ').toLocaleLowerCase('ru').replaceAll('ё','е').includes(search.trim().toLocaleLowerCase('ru').replaceAll('ё','е')))
-    .sort((a,b)=>sort==='price'?a.price-b.price:a.name.localeCompare(b.name,'ru')),[category,gameFilter,sort,search,favorites,shopCatalog]);
   const ownedCounts = new Map<string,number>();
   for(const owned of r.room.items)ownedCounts.set(owned.productId,(ownedCounts.get(owned.productId)??0)+1);
   const inventoryCategories = [...new Set(r.room.items.map(i => productOf(i).category))].sort((a,b) => a.localeCompare(b,'ru'));
@@ -293,9 +316,12 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
   }).sort((a,b) => inventorySort==='name' ? productOf(a).name.localeCompare(productOf(b).name,'ru') : inventorySort==='price-asc' ? productOf(a).price-productOf(b).price : inventorySort==='price-desc' ? productOf(b).price-productOf(a).price : inventorySort==='oldest' ? inventoryOrder.get(a.id)!-inventoryOrder.get(b.id)! : inventoryOrder.get(b.id)!-inventoryOrder.get(a.id)!);
   const resetInventoryFilters = () => { setInventorySearch(''); setInventoryStatus('Все'); setInventoryCategory('Все категории'); };
   const item = r.room.items.find((i) => i.id === selected);
+  const inspectorItem = view === 'room' && !showcase && !colorDraft && !furnitureColor ? item : undefined;
+  const colorItem = view === 'room' && !showcase && furnitureColor ? item : undefined;
+  const notificationCenter = <NotificationCenter notifications={notifications.notifications} onRemove={notifications.remove} inline={!!(inspectorItem || colorItem)} />;
   const draftError =
     item && draft
-      ? placementError(r.room.items, item, draft.x, draft.y, draft.rotation, draft.parentId ?? null, draft.supportLevel??0)
+      ? placementError(r.room.items, item, draft.x, draft.y, draft.rotation, draft.parentId ?? null, draft.supportLevel??0, draft.wallHeight, draft.wallSide)
       : null;
   const onReady = useCallback(() => r.setReady(true), [r.setReady]);
   const selectItem = (id: string) => {
@@ -313,7 +339,8 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
     setExpanded(true);
     setFurnitureColor(null);
     setSelected(i.id);
-    setDraft(initialPlacement(i));
+    const start = initialPlacement(i);
+    setDraft(i.x === null ? availablePlacement(r.room.items, i, start) ?? start : start);
     setView("room");
   };
   const openFurnitureColor = (target: Item) => {
@@ -374,7 +401,6 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
         activeMs={r.room.activeMs} running={r.timerRunning}
         status={r.status}
         cloud={!!r.user}
-
       />
       <div className="immersive-room">
 
@@ -432,11 +458,11 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
                 <RoomStage
                   expanded={expanded}
                   onClose={() => { setDraft(null); setSelected(null); setExpanded(false); }}
-                  inspector={item && !showcase && !colorDraft && !furnitureColor && <FurnitureInspector
-                    key={item.id} item={item} items={r.room.items} draft={draft} error={draftError} busy={r.busy}
-                    onDraft={setDraft} onEdit={() => edit(item)} onRotate={direction => rotateItem(item.id,direction)}
-                    onColor={() => openFurnitureColor(item)} onToggle={() => { void r.command('toggle',{id:item.id}); }}
-                    onRemove={() => { void storeItem(item); }}
+                  inspector={inspectorItem && <FurnitureInspector
+                    key={inspectorItem.id} item={inspectorItem} items={r.room.items} draft={draft} error={draftError} busy={r.busy} notifications={notificationCenter}
+                    onDraft={setDraft} onEdit={() => edit(inspectorItem)} onRotate={direction => rotateItem(inspectorItem.id,direction)}
+                    onColor={() => openFurnitureColor(inspectorItem)} onToggle={() => { void r.command('toggle',{id:inspectorItem.id}); }}
+                    onRemove={() => { void storeItem(inspectorItem); }}
                     onPlace={place} onClose={() => { setFurnitureColor(null); setSelected(null); setDraft(null); setExpanded(false); }}/>
                   }
                 >
@@ -486,8 +512,8 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
                       readOnly={showcase}
                       disabled={r.busy || !r.loaded || !!colorDraft || !!furnitureColor}
                       onDragMessage={r.setNotice}
-                      onDrop={async (id, x, y, rotation, parentId, supportLevel) => {
-                        const saved = await moves.move({ id, x, y, rotation, parentId, supportLevel });
+                      onDrop={async (id, placement) => {
+                        const saved = await moves.move({ id, ...placement });
                         if (saved) r.setNotice("Новое место сохранено");
                         return saved;
                       }}
@@ -514,13 +540,14 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
                             ...seasons.map(value => ({value, label:seasonNames[value]})),
                           ]}/></label>
                       <button className="room-tool" aria-expanded={!!colorDraft} aria-controls="room-colors" disabled={r.busy || !r.loaded}
-                        onClick={() => { setRainOpen(false); setFurnitureColor(null); setColorDraft(colorDraft ? null : { ...appearanceOf(r.room.appearance) }); setDraft(null); }}>
+                        onClick={() => { setRainOpen(false); setFurnitureColor(null); if(!colorDraft)setIslandOpen(false); setColorDraft(colorDraft ? null : { ...appearanceOf(r.room.appearance) }); setDraft(null); }}>
                         <Palette size={16}  strokeWidth={1.75}/> Цвета комнаты
                       </button>
-                      <details className="accent-settings" onToggle={e=>{if(e.currentTarget.open){setRainOpen(false);setColorDraft(null);setFurnitureColor(null);}}} onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();e.currentTarget.open=false;e.currentTarget.querySelector('summary')?.focus();}}}>
+                      <details className="accent-settings" onToggle={e=>{if(e.currentTarget.open){setRainOpen(false);setColorDraft(null);setFurnitureColor(null);setIslandOpen(false);}}} onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();e.currentTarget.open=false;e.currentTarget.querySelector('summary')?.focus();}}}>
                         <summary className="room-tool"><Palette size={16} strokeWidth={1.75}/>Свет и гирлянда</summary>
                         <div className="accent-settings-panel" aria-label="Настройки вечернего света">
                           <div className="light-panel-heading"><strong>Вечерний свет</strong><button type="button" className="icon-button" aria-label="Закрыть настройки света" onClick={e=>{const details=e.currentTarget.closest("details");if(details){details.open=false;details.querySelector("summary")?.focus();}}}><X size={18}/></button></div>
+                          <div className="accent-settings-content">
                       <div className="accent-light-controls" role="group" aria-label="Вечернее освещение" title="Настройки света сохраняются на этом устройстве">
                         <button type="button" className="room-tool accent-light-toggle" aria-pressed={accentLights.value.garland} aria-label="Гирлянда" disabled={!accentLights.ready || !accentLights.value.garlandInstalled} onClick={()=>accentLights.toggle('garland')}>
                           <Sparkles size={16} strokeWidth={1.75}/>Гирлянда <span aria-hidden="true">{!accentLights.value.garlandInstalled?'Убрана':accentLights.value.garland?'Вкл':'Выкл'}</span>
@@ -551,6 +578,7 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
                               {source==='garland' && <button type="button" className="room-tool accent-install" onClick={()=>accentLights.update({garlandInstalled:!accentLights.value.garlandInstalled})}>{accentLights.value.garlandInstalled?'Убрать гирлянду':'Повесить гирлянду'}</button>}
                             </fieldset>;
                           })}
+                          </div>
                         </div>
                       </details>
                       </div>
@@ -578,16 +606,24 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
                       }}>{r.busy ? 'Сохраняется…' : 'Сохранить цвета'}</button><button className="button ghost" disabled={r.busy} onClick={()=>setColorDraft(null)}>Отменить цвета</button></div>
                     </section>
                   )}
-                  {furnitureColor && item && !showcase && <FurnitureColorPanel item={item} color={furnitureColor.color} busy={r.busy}
+                  {furnitureColor && colorItem && <FurnitureColorPanel item={colorItem} color={furnitureColor.color} busy={r.busy} notifications={notificationCenter}
                     onChange={color=>setFurnitureColor({...furnitureColor,color})} onClose={()=>setFurnitureColor(null)}
                     onSave={async()=>{if(await r.command('color',{id:furnitureColor.id,color:furnitureColor.color})){setFurnitureColor(null);r.setNotice('Цвет мебели сохранён');}}}/>}
+                  {!showcase && <ResidentPanel items={r.room.items} mode={resident.mode} status={resident.status}
+                    skills={growthActivities} rewards={growthRewards}
+                    onSkill={resident.sendSkill}
+                    onRewards={()=>{setGrowthTab('rewards');setFocusedReward(undefined);setView('progress');}}
+                    onStyle={() => setWardrobe(true)} styleReady={resident.lookReady}
+                    disabled={r.busy || !r.loaded || !!draft || !!colorDraft || !!furnitureColor}
+                    motion={motion.enabled} reduced={motion.reduced} onEnableMotion={motion.toggle}
+                    onMode={resident.choose} onAction={resident.send}/>}
                   {rainOpen && !restMode && <RainPanel atmosphere={atmosphere} wind={wind} winter={season.season==='winter'} rain={rain} storm={storm} onClose={()=>setRainOpen(false)}/>}
                   <div className="scene-footer">
                     <span>
                       {showcase
                         ? "Пример интерьера — твоя комната сохранена"
                         : draft
-                          ? "Зажми предмет и перетащи · Отпусти, чтобы выбрать место"
+                          ? "Перетащи предмет или укажи место на сцене"
                             : resident.mode === 'direct' ? 'Клик по полу — идти · По лампе — свет · Тяни предмет, чтобы переместить' : "Тяните мышкой · Правая кнопка — поворот"}
                     </span>
                     <div className="zoom-controls tabular-nums">
@@ -623,14 +659,6 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
                   </div>
                 </RoomStage>
               </div>
-              {!showcase && <ResidentPanel items={r.room.items} mode={resident.mode} status={resident.status}
-                skills={growthActivities} rewards={growthRewards}
-                onSkill={resident.sendSkill}
-                onRewards={()=>{setGrowthTab('rewards');setFocusedReward(undefined);setView('progress');}}
-                onStyle={() => setWardrobe(true)} styleReady={resident.lookReady}
-                disabled={r.busy || !r.loaded || !!draft || !!colorDraft || !!furnitureColor}
-                motion={motion.enabled} reduced={motion.reduced} onEnableMotion={motion.toggle}
-                onMode={resident.choose} onAction={resident.send}/>}
               <SessionStrip
                 activeMs={r.room.activeMs}
                 activity={r.activity}
@@ -665,96 +693,14 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
             onCompleted={(message,id)=>{notifications.notify({kind:'info',title:'Шаг к новому мастерству',message});if(resident.mode==='auto')resident.reactSkill(id);}} />}
           {view === 'graph' && <ProgressGraph data={progress.data} loaded={progress.loaded} error={progress.error} context={graphContext}
             onNavigate={context=>openGraph(context.skill,context.focus)} onRoom={()=>navigate('room')} onProgress={()=>navigate('progress')}/>}
-          {view === "shop" && (
-            <>
-              <div className="page-heading">
-                <div>
-                  <div className="eyebrow">ВЕЩИ С ХАРАКТЕРОМ</div>
-                  <h1>Чуть больше уюта.</h1>
-                  <p>Собери комнату, в которую хочется возвращаться.</p>
-                </div>
-                <button type="button" className="shop-favorites-entry" aria-pressed={category==='Избранное'} onClick={()=>setCategory(category==='Избранное'?'Все':'Избранное')}>
-                  <span className="shop-favorites-icon"><Heart size={20} strokeWidth={1.75} fill={category==='Избранное'?'currentColor':'none'}/></span>
-                  <span className="shop-favorites-copy"><strong>Избранное</strong><small>Сохранено на потом</small></span>
-                  <span className="shop-favorites-count tabular-nums">{favorites.length}</span>
-                </button>
-              </div>
-              <div className="shop-search-row">
-                <div className="shop-search"><Search size={18} aria-hidden="true"/><input type="search" aria-label="Поиск мебели" placeholder="Найти вещь для комнаты…" value={search} onChange={e=>setSearch(e.target.value)}/>{search&&<button type="button" aria-label="Очистить поиск" onClick={()=>setSearch('')}><X size={16}/></button>}</div>
-
-              </div>
-              <div className="filter-row">
-                <div className="tabs">
-                  {[
-                    "Все",
-                    "Новинки",
-                    "Игровая коллекция",
-                    "Мебель",
-                    "Растения",
-                    "Свет",
-                    "Текстиль",
-                    "Декор",
-                  ].map((c) => (
-                    <button
-                      className={category === c ? "selected" : ""}
-                      key={c}
-                      aria-pressed={category===c}
-                      onClick={() => setCategory(c)}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
-                <div className="shop-sort-row">                <Select aria-label="Сортировка товаров" value={sort} onValueChange={setSort}
-                  options={[{value:'price',label:'Сначала дешевле'},{value:'name',label:'По названию'}]}/><span className="search-count tabular-nums" role="status">Найдено: {products.length}</span></div>
-              </div>
-              {category==='Игровая коллекция' && <section className="gaming-filter" aria-label="Игровая коллекция">
-                <div><strong>Любимые миры, своя комната.</strong><p>Фигурки — на полки и столики. Постеры — на стену.</p></div>
-                <div className="tabs" aria-label="Фильтр по игре">{['Все игры',...games].map(game=><button key={game} className={gameFilter===game?'selected':''} aria-pressed={gameFilter===game} onClick={()=>setGameFilter(game)}>{game}</button>)}</div>
-              </section>}
-              {workshopCatalog.error && <p role="alert">{workshopCatalog.error}</p>}
-              {products.length===0&&<div className="search-empty"><Search size={24} aria-hidden="true"/><h2>{category==='Избранное' && !favorites.length?'Здесь будут любимые вещи':'Пока ничего не нашлось'}</h2><p>{category==='Избранное' && !favorites.length?'Нажми на сердечко у вещи в магазине — она появится здесь.':'Попробуй другое название или сбрось фильтры.'}</p><button className="button secondary" onClick={()=>{setSearch('');setCategory('Все');setGameFilter('Все игры');}}>Показать все вещи</button></div>}
-              <div className="product-grid">
-                {products.map((p) => (
-                    <article className="product-card" key={p.id}>
-                      <div className="product-image">
-                        <button type="button" className="favorite-toggle" aria-label={`${favorites.includes(p.id)?'Убрать из избранного':'В избранное'}: ${p.name}`} aria-pressed={favorites.includes(p.id)} disabled={!favoritesReady} onClick={()=>toggleFavorite(p.id)}><Heart size={18} strokeWidth={1.75} fill={favorites.includes(p.id)?'currentColor':'none'}/></button>
-                        {(p.kind==='collectible'||!!posterArt[p.id])?<button className="collectible-preview-button" aria-label={`Рассмотреть ${p.name}`} aria-haspopup="dialog" onClick={()=>setInspect({product:p})}><FurniturePreview product={p}/><span className="collectible-preview-hint">Рассмотреть</span></button>:<FurniturePreview product={p} />}
-                        <span className="size-badge tabular-nums">
-                          {p.w} × {p.h}
-                        </span>
-                      </div>
-                      <small>{p.category}{p.game ? ` · ${p.game}` : p.collection ? " · Новинка" : ""}</small>
-                      <h3>{p.name}</h3>
-                      <small className="owned-count tabular-nums">У тебя: {ownedCounts.get(p.id)??0}</small>
-                      <div className="product-bottom tabular-nums">
-                        <span>
-                          <Coins size={16}  strokeWidth={1.75}/>
-                          {p.price}
-                        </span>
-                        <button
-                          className="button small primary"
-                          aria-label={r.room.balance<p.price?`${p.name}: не хватает ${p.price-r.room.balance} монет`:`${ownedCounts.has(p.id)?"Купить ещё":"Купить"} ${p.name} за ${p.price} монет`}
-                          disabled={r.busy || r.room.balance < p.price}
-                          onClick={async () => {
-                            if (
-                              await r.command("purchase", {
-                                productId: p.id,
-                                price: p.price,
-                              })
-                            )
-                              notifications.notify({ kind: "purchase", title: "Новая вещь для комнаты", message: `${p.name} — теперь в твоём инвентаре` });
-                          }}
-                        >
-                          {r.room.balance < p.price ? "Накопить" : ownedCounts.has(p.id) ? "Купить ещё" : "Купить"}
-                          <Plus size={16}  strokeWidth={1.75}/>
-                        </button>
-                      </div>
-                    </article>
-                  ))}
-              </div>
-            </>
-          )}
+          <RoomShop active={view === 'shop'} productId={productId} filters={shopFilters} returnTarget={shopReturnTarget} onFiltersChange={updateShopFilters}
+            balance={r.room.balance} ownedCounts={ownedCounts}
+            busy={r.busy || !r.loaded} onNavigate={id => navigate('shop', id)} onInspect={product => setInspect({ product })}
+            onNotice={r.setNotice} onPurchase={async product => {
+              if (await r.command('purchase', { productId: product.id, price: product.price })) {
+                notifications.notify({ kind: 'purchase', title: 'Новая вещь для комнаты', message: `${product.name} — теперь в твоём инвентаре` });
+              }
+            }} />
           {view === "inventory" && (
             <>
               <div className="page-heading">
@@ -765,10 +711,7 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
                 </div>
                 <button
                   className="button secondary"
-                  onClick={() => {
-                    setCategory("Все");
-                    setView("shop");
-                  }}
+                  onClick={() => navigate('shop')}
                 >
                   <Plus size={16}  strokeWidth={1.75}/>В магазин
                 </button>
@@ -814,7 +757,7 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
           {view === "stats" && <MusicStatistics music={music.music} period={period} onPeriod={setPeriod}
             playing={music.playing} currentId={music.current.id} onPlay={music.play} onBrowse={() => setView("music")} />}
           {view === "profile" && <>
-            <div className="page-heading"><div><div className="eyebrow">ЛИЧНОЕ ПРОСТРАНСТВО</div><h1>Локальный профиль.</h1><p>Твоё пространство в этом браузере.</p></div></div>
+            <div className="page-heading"><h1>Мой профиль</h1></div>
             <LocalAccountPanel/>
           </>}
           {view === "settings" && (
@@ -1018,7 +961,7 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
           </button>
         </div>
       </footer>
-      <NotificationCenter notifications={notifications.notifications} onRemove={notifications.remove} />
+      {!inspectorItem && !colorItem && notificationCenter}
       {inspect&&<CollectibleViewer product={inspect.product} color={inspect.color} onClose={()=>setInspect(null)}/>}
       {wardrobe&&resident.lookReady&&<ResidentWardrobe key={r.user?.id??'guest'} look={resident.look} onClose={()=>setWardrobe(false)} onSave={look=>{
         const saved=resident.saveLook(look);setWardrobe(false);

@@ -1,4 +1,5 @@
 "use client";
+import { browserId } from '@/lib/browser-id';
 import { useEffect, useRef, useState } from "react";
 import {
   Cloud, MoreHorizontal, SkipBack, SkipForward,
@@ -138,7 +139,7 @@ export default function MusicLibrary({
             onSubmit={(e) => {
               e.preventDefault();
               if (!playlistName.trim() || editing) return;
-              const id = crypto.randomUUID();
+              const id = browserId();
               music.setMusic((s) => ({
                 ...s,
                 playlists: [

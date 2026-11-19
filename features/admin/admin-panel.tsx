@@ -1,5 +1,6 @@
 "use client";
 
+import { browserId } from '@/lib/browser-id';
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, X } from "lucide-react";
@@ -89,7 +90,7 @@ export function AdminPanel() {
       try {
         const seconds = audioFile ? await inspectWorkshopAudio(audioFile) : editedTrack?.seconds;
         if (!seconds) throw Error('Выберите аудиофайл.');
-        const track: Track = {id:editingId ?? 'workshop-track:' + crypto.randomUUID(),title:title.trim(),artist:String(data.get('artist') ?? '').trim(),genre:String(data.get('genre') ?? 'Lo-fi'),description:String(data.get('description') ?? '').trim(),color,seconds,duration:Math.floor(seconds/60)+':'+String(Math.floor(seconds%60)).padStart(2,'0'),size:audioFile?.size ?? editedTrack?.size ?? 0};
+        const track: Track = {id:editingId ?? 'workshop-track:' + browserId(),title:title.trim(),artist:String(data.get('artist') ?? '').trim(),genre:String(data.get('genre') ?? 'Lo-fi'),description:String(data.get('description') ?? '').trim(),color,seconds,duration:Math.floor(seconds/60)+':'+String(Math.floor(seconds%60)).padStart(2,'0'),size:audioFile?.size ?? editedTrack?.size ?? 0};
         await saveWorkshopTrack(track, audioFile ?? undefined);
         setTracks(old => [...old.filter(t => t.id !== track.id), track]);
         resetEditor(); editorDialog.current?.close(); setQuery('');
@@ -98,7 +99,7 @@ export function AdminPanel() {
       finally { savingTrack.current = false; setUploading(false); }
       return;
     }
-    const item: WorkshopItem = { id: editingId ?? crypto.randomUUID(), title: title.trim(), description: String(data.get("description") ?? "").trim(), category: String(data.get("category")), illustration: kind, color, width: Number(data.get("width")), depth: Number(data.get("depth")), price: Number(data.get("price")), purchasable: data.has("purchasable"), images, collectionId: collectionId || undefined };
+    const item: WorkshopItem = { id: editingId ?? browserId(), title: title.trim(), description: String(data.get("description") ?? "").trim(), category: String(data.get("category")), illustration: kind, color, width: Number(data.get("width")), depth: Number(data.get("depth")), price: Number(data.get("price")), purchasable: data.has("purchasable"), images, collectionId: collectionId || undefined };
     if (![item.width, item.depth, item.price].every(Number.isInteger) || item.width < 1 || item.width > 12 || item.depth < 1 || item.depth > 8 || item.price < 0 || item.price > 1000000) { setMessage("Проверьте размеры и цену."); return; }
     if (persist(editingId ? catalog.map(old => old.id === editingId ? item : old) : [...catalog, item], collections)) { resetEditor(); editorDialog.current?.close(); setQuery(""); setCategory("Все категории"); setCollectionFilter(""); }
   }
@@ -183,7 +184,7 @@ export function AdminPanel() {
 
     {message && <p role="status" className={styles.feedback}><Icon name="info"/>{message}</p>}
     <details className={styles.collectionManager}><summary className={styles.collectionSummary}><span className={styles.collectionSummaryIcon}><Icon name="box"/></span><span><strong>Коллекции вещей</strong><small>Объединяй предметы в свои наборы</small></span><span className={styles.collectionCount}>{collections.length}</span><span className={styles.collectionExpand}>Управление <span aria-hidden="true">⌄</span></span></summary><div className={styles.collectionContent}>
-      <form onSubmit={event => { event.preventDefault(); if (!collectionTitle.trim()) return; if (collections.some(c => c.id !== editingCollection && c.title.toLocaleLowerCase() === collectionTitle.trim().toLocaleLowerCase())) { setMessage("Коллекция с таким названием уже существует."); return; } const entry = {id: editingCollection ?? crypto.randomUUID(), title: collectionTitle.trim(), description: collectionDescription.trim()}; if (persist(catalog, editingCollection ? collections.map(c => c.id === editingCollection ? entry : c) : [...collections, entry])) { setEditingCollection(null); setCollectionTitle(""); setCollectionDescription(""); } }}>
+      <form onSubmit={event => { event.preventDefault(); if (!collectionTitle.trim()) return; if (collections.some(c => c.id !== editingCollection && c.title.toLocaleLowerCase() === collectionTitle.trim().toLocaleLowerCase())) { setMessage("Коллекция с таким названием уже существует."); return; } const entry = {id: editingCollection ?? browserId(), title: collectionTitle.trim(), description: collectionDescription.trim()}; if (persist(catalog, editingCollection ? collections.map(c => c.id === editingCollection ? entry : c) : [...collections, entry])) { setEditingCollection(null); setCollectionTitle(""); setCollectionDescription(""); } }}>
         <label className={labelClass}>Название коллекции<input required maxLength={100} className={fieldClass} value={collectionTitle} onChange={event => setCollectionTitle(event.target.value)}/></label>
         <label className={labelClass}>Описание коллекции<input maxLength={500} className={fieldClass} value={collectionDescription} onChange={event => setCollectionDescription(event.target.value)}/></label>
         <button disabled={!loaded} className={styles.primary}>{editingCollection ? "Сохранить коллекцию" : "Создать коллекцию"}</button>

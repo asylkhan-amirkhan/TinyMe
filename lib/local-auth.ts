@@ -1,3 +1,6 @@
+import { isShopPath } from '../domain/shop';
+import { browserId } from './browser-id';
+
 export type LocalRole = 'user' | 'admin';
 export type LocalAccount = { id: string; name: string; email: string; role: LocalRole };
 type StoredAccount = LocalAccount & { salt: string; hash: string };
@@ -5,6 +8,14 @@ type Store = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 export const accountsKey = 'tinyme:local-accounts:v1';
 export const sessionKey = 'tinyme:local-session:v1';
 export const localAuthEvent = 'tinyme:local-auth';
+export function localReturnPath(value: string | string[] | undefined): string | undefined {
+  if (typeof value !== 'string') return;
+  if (isShopPath(value.split(/[?#]/, 1)[0])) return value;
+  if (['/room', '/graph', '/admin', '/catalog', '/community'].includes(value)) return value;
+
+  const match = /^\/(catalog|profiles|collections)\/((?:[a-z0-9_:-]|%3a)+)$/i.exec(value);
+  if (match) return `/${match[1].toLowerCase()}/${encodeURIComponent(decodeURIComponent(match[2]))}`;
+}
 const hex = (bytes: Uint8Array) => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
 function accounts(storage: Pick<Storage, 'getItem'>): StoredAccount[] {
   const raw = storage.getItem(accountsKey);
@@ -17,8 +28,13 @@ function accounts(storage: Pick<Storage, 'getItem'>): StoredAccount[] {
 }
 const publicAccount = ({ id, name, email, role }: StoredAccount): LocalAccount => ({ id, name, email, role });
 async function passwordHash(password: string, salt: string) {
-  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
   const bytes = Uint8Array.from(salt.match(/../g)!, b => parseInt(b,16));
+  const input = new TextEncoder().encode(password);
+  if (!crypto.subtle) {
+    const [{ pbkdf2Async }, { sha256 }] = await Promise.all([import('@noble/hashes/pbkdf2.js'), import('@noble/hashes/sha2.js')]);
+    return hex(await pbkdf2Async(sha256, input, bytes, { c: 150000, dkLen: 32 }));
+  }
+  const key = await crypto.subtle.importKey('raw', input, 'PBKDF2', false, ['deriveBits']);
   return hex(new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: bytes, iterations: 150000 }, key, 256)));
 }
 export async function registerLocal(storage: Store, draft: { name: string; email: string; password: string; role: LocalRole }) {
@@ -32,7 +48,7 @@ export async function registerLocal(storage: Store, draft: { name: string; email
   const existing = accounts(storage);
   if (existing.some(a => a.email === email)) throw Error('В этом браузере уже есть аккаунт с таким email. Войди в него.');
   if (existing.length >= 50) throw Error('В этом браузере уже создано 50 аккаунтов.');
-  const account: StoredAccount = { id: crypto.randomUUID(), name, email, role: draft.role, salt, hash };
+  const account: StoredAccount = { id: browserId(), name, email, role: draft.role, salt, hash };
   storage.setItem(accountsKey, JSON.stringify({ version: 1, accounts: [...existing, account] }));
   return publicAccount(account);
 }

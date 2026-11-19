@@ -1,3 +1,4 @@
+import { browserId } from '@/lib/browser-id';
 import { openDB } from 'idb';
 import type { MusicState, Track } from './music-storage';
 
@@ -14,7 +15,7 @@ export async function saveWorkshopTrack(track: WorkshopTrack, file?: Blob) {
   await tx.objectStore('tracks').put(track, track.id);
   await tx.done;
   window.dispatchEvent(new Event(workshopMusicEvent));
-  try { localStorage.setItem(workshopMusicEvent, crypto.randomUUID()); } catch { /* Same-tab updates still work. */ }
+  try { localStorage.setItem(workshopMusicEvent, browserId()); } catch { /* Same-tab updates still work. */ }
 }
 export function mergeWorkshopMusic(state: MusicState, published: WorkshopTrack[]): MusicState {
   const tracks: Track[] = published.map(t => ({id:t.id,title:t.title,duration:t.seconds,size:t.size,workshop:true}));

@@ -1,7 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { accountsKey, sessionKey, registerLocal, loginLocal, currentLocalAccount, startLocalSession, canOpenWorkshop } from '../lib/local-auth';
+import { accountsKey, sessionKey, registerLocal, loginLocal, currentLocalAccount, startLocalSession, canOpenWorkshop, localReturnPath } from '../lib/local-auth';
 function memory() { const data = new Map<string,string>(); return { getItem:(key:string) => data.get(key) ?? null, setItem:(key:string,value:string) => { data.set(key,value); }, removeItem:(key:string) => { data.delete(key); } }; }
+test('local sign-in returns to community details and only accepts internal application paths', () => {
+  for (const path of ['/room', '/admin', '/community', '/catalog/desk-oak', '/catalog/workshop%3Achair', '/profiles/user-id', '/collections/list-id']) {
+    assert.equal(localReturnPath(path), path);
+  }
+  for (const path of ['//example.test', 'https://example.test', '/catalog/%2Fexample.test', '/catalog/..', '/catalog/item?next=/admin', ['/catalog', '/admin']]) {
+    assert.equal(localReturnPath(path), undefined);
+  }
+});
 test('local registration hashes the password and login restores the chosen role', async () => {
   const storage = memory();
   const account = await registerLocal(storage, {name:'Local admin',email:' ADMIN@example.test ',password:'test-password-123',role:'admin'});
