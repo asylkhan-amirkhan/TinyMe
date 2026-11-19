@@ -1,8 +1,17 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { localOnly } from "@/config/runtime";
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 export const supabase = !localOnly && url && key ? createClient(url, key) : null;
+
+let shopClient: SupabaseClient | null = null;
+export function getSupabase() {
+  const shopKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !shopKey) return null;
+  shopClient ??= createClient(url, shopKey);
+  return shopClient;
+}
+
 export async function rpc<T>(
   name: string,
   args: Record<string, unknown> = {},
