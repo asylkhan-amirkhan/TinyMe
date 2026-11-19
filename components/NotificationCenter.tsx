@@ -42,14 +42,16 @@ function NotificationCard({ notification, onRemove }: {
   );
 }
 
-export default function NotificationCenter({ notifications, onRemove }: {
+export default function NotificationCenter({ notifications, onRemove, inline = false }: {
   notifications: RoomNotification[];
   onRemove: (id: number) => void;
+  inline?: boolean;
 }) {
+  if (!notifications.length) return null;
   return (
-    <aside className="notification-center" aria-label="Уведомления">
+    <aside className="notification-center" data-layout={inline ? 'inline' : undefined} aria-label="Уведомления">
       {/* A queue keeps simultaneous purchases and rewards readable, never replacing an error. */}
-      {notifications.slice(0, 2).map((notification) => (
+      {notifications.slice(0, inline ? 1 : 2).map((notification) => (
         <NotificationCard key={notification.id} notification={notification} onRemove={onRemove} />
       ))}
     </aside>

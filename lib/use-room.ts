@@ -9,8 +9,10 @@ import {
   accrue,
   catalog,
   placementError,
+  productOf,
   mergeRoom,
   removeItem,
+  type WallSide,
 } from "@/domain/model";
 import { supabase, rpc, errorMessage } from "./supabase";
 import { BackgroundSession, type ActivitySnapshot } from "./background-session";
@@ -307,6 +309,9 @@ export function useRoom() {
           const item = s.items.find((i) => i.id === payload.id);
           if (!item) throw Error("Предмет не найден");
           if (kind === "color" && !validFurnitureColor(payload.color)) throw Error("Выберите допустимый цвет мебели");
+          const isWallPlacement = kind === 'place' && productOf(item).surface === 'wall';
+          const wallHeight = isWallPlacement && payload.wallHeight !== undefined ? Number(payload.wallHeight) : item.wallHeight;
+          const wallSide = isWallPlacement && payload.wallSide !== undefined ? payload.wallSide as WallSide : item.wallSide;
           if (kind === "place") {
             const err = placementError(
               s.items,
@@ -316,6 +321,8 @@ export function useRoom() {
               Number(payload.rotation),
               payload.parentId === undefined ? item.parentId ?? null : payload.parentId === null ? null : String(payload.parentId),
               payload.supportLevel === undefined ? (payload.parentId !== undefined && payload.parentId !== (item.parentId ?? null) ? 0 : item.supportLevel ?? 0) : Number(payload.supportLevel),
+              wallHeight,
+              wallSide,
             );
             if (err) throw Error(err);
           }
@@ -333,6 +340,8 @@ export function useRoom() {
                       x: Number(payload.x),
                       y: Number(payload.y),
                       rotation: Number(payload.rotation),
+                      ...(wallHeight === undefined ? {} : { wallHeight }),
+                      ...(wallSide === undefined ? {} : { wallSide }),
                       parentId: payload.parentId === undefined ? item.parentId ?? null : payload.parentId === null ? null : String(payload.parentId),
                       supportLevel: payload.supportLevel === undefined ? (payload.parentId !== undefined && payload.parentId !== (item.parentId ?? null) ? 0 : item.supportLevel ?? 0) : Number(payload.supportLevel),
                     },

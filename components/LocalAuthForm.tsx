@@ -4,9 +4,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, UserRound, ArrowRight, House } from 'lucide-react';
 import { accountsKey, localAuthEvent, loginLocal, registerLocal, startLocalSession, type LocalRole } from '@/lib/local-auth';
+import { isShopPath } from '@/domain/shop';
 import styles from './local-auth.module.css';
 
-export default function LocalAuthForm({ register = false }: { register?: boolean }) {
+export default function LocalAuthForm({ register = false, next }: { register?: boolean; next?: string }) {
   const router = useRouter();
   const [name, setName] = useState(''), [email, setEmail] = useState(''), [password, setPassword] = useState(''), [confirm, setConfirm] = useState('');
   const [role, setRole] = useState<LocalRole>('user'), [busy, setBusy] = useState(false), [error, setError] = useState('');
@@ -22,9 +23,8 @@ export default function LocalAuthForm({ register = false }: { register?: boolean
       startLocalSession(sessionStorage, account);
       window.dispatchEvent(new Event(localAuthEvent));
       setPassword(''); setConfirm('');
-      const next = new URL(window.location.href).searchParams.get('next');
-      const allowed = next === '/room' || next === '/graph' || (next === '/admin' && account.role === 'admin');
-      router.replace(allowed ? next! : account.role === 'admin' ? '/admin' : '/room');
+      const allowed = next && (next === '/room' || next === '/graph' || isShopPath(next.split(/[?#]/, 1)[0]) || (next === '/admin' && account.role === 'admin'));
+      router.replace(allowed ? next : account.role === 'admin' ? '/admin' : '/room');
     } catch (e) { setError(e instanceof DOMException ? 'Не удалось сохранить вход. Разреши хранение данных сайта в браузере.' : e instanceof Error ? e.message : 'Не удалось войти. Попробуй ещё раз.'); }
     finally { setBusy(false); }
   }
@@ -43,7 +43,7 @@ export default function LocalAuthForm({ register = false }: { register?: boolean
           <button className={styles.submit} type="submit">{busy ? 'Подождите…' : register ? 'Создать аккаунт' : 'Войти'}<ArrowRight size={18}/></button>
         </fieldset>
       </form>
-      <p className={styles.switch}>{register ? 'Уже есть аккаунт? ' : 'Ещё нет аккаунта? '}<Link href={register ? '/login' : '/register'}>{register ? 'Войти' : 'Зарегистрироваться'}</Link></p>
+      <p className={styles.switch}>{register ? 'Уже есть аккаунт? ' : 'Ещё нет аккаунта? '}<Link href={{ pathname: register ? '/login' : '/register', query: next ? { next } : undefined }}>{register ? 'Войти' : 'Зарегистрироваться'}</Link></p>
       <p className={styles.note}>Локальный прототип: аккаунты доступны только в этом браузере. Выбор администратора предназначен для тестирования. Комната и музыка пока общие для аккаунтов этого браузера.</p>
     </section>
   </main>;

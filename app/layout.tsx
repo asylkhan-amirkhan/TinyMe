@@ -28,6 +28,7 @@ import "./sunset.css";
 import "./themes.css";
 import "./progress.css";
 import "./progress-graph.css";
+import "./shop.css";
 export const metadata: Metadata = {
   title: "tiny me — твоё тихое место",
   description:

@@ -4,6 +4,7 @@ import {placementError,resolveItems,removeItem,localPoint,dimensions,productOf,t
 import {project} from '../engine/isometric';
 import {tabletopDrop} from '../engine/tabletop-drop';
 import {roomLight} from '../engine/room-light';
+import { availablePlacement } from '../domain/drag';
 const table:Item={id:'table',productId:'table-tea',x:8,y:6,rotation:0,on:false};
 const vase:Item={id:'vase',productId:'vase-branches',x:0,y:0,rotation:0,on:false,parentId:'table'};
 
@@ -53,4 +54,24 @@ test('table lamp uses elevated position and turns off without losing its support
   const scene=resolveItems([table,lamp]);
   assert.equal(roomLight(scene,0,false).sources[0].position[2],63);
   assert.equal(roomLight(resolveItems([table,{...lamp,on:false}]),0,false).sources.length,0);
+});
+
+test('a figurine from inventory snaps to the front of a rotated working desk', () => {
+  const desk: Item = { ...table, productId: 'desk-oak', id: 'desk' };
+  const figure: Item = { id: 'figure', productId: 'figure-alexander', x: null, y: null, rotation: 0, on: false };
+  const target = { x: 2, y: 0, rotation: 0, parentId: desk.id };
+  for (const rotation of [0, 90, 180, 270]) {
+    const parent = { ...desk, rotation };
+    const [world] = resolveItems([{ ...figure, ...target }, parent]);
+    assert.equal(world.elevation, 65);
+    const point = project(world.x! + .5, world.y! + .5, world.elevation);
+    assert.deepEqual(tabletopDrop([parent, figure], figure, ...point, rotation), target);
+    // Grabbing the upper part of the figure puts its contact point below the narrow desk edge.
+    assert.deepEqual(tabletopDrop([parent, figure], figure, point[0], point[1] + 27, rotation, point), target);
+    assert.equal(placementError([parent], figure, target.x, target.y, 0, desk.id), null);
+  }
+
+  const existing: Item = { ...figure, ...target, id: 'existing', x: 0 };
+  const nearest = availablePlacement([desk, existing], figure, { ...target, x: 0 });
+  assert.deepEqual(nearest, { ...target, x: 1 });
 });

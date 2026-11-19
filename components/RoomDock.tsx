@@ -1,5 +1,6 @@
 "use client";
 import { useRouter } from 'next/navigation';
+import { shopPath } from '@/domain/shop';
 import { Home, Sprout, Armchair, Package, Music2, ChartNoAxesCombined, ShieldCheck } from 'lucide-react';
 import styles from './room-dock.module.css';
 
@@ -21,7 +22,7 @@ export default function RoomDock({ active, onNavigate, showAdmin = true }: { act
       onClick={() => {
         if (id === 'admin') router.push('/admin');
         else if (onNavigate) onNavigate(id);
-        else router.push(id === 'room' ? '/room' : `/room?view=${id}`);
+        else router.push(id === 'shop' ? shopPath : id === 'room' ? '/room' : `/room?view=${id}`);
       }}>
       <Icon aria-hidden="true" size={20} strokeWidth={1.75}/>
       <span className={styles.label}>{label}</span>

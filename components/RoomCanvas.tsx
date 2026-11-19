@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { Application, Container, Sprite, Texture } from "pixi.js";
-import { type Item, type Placement, placementError, canPlaceOnTop, productOf, resolveItems, dimensions } from "@/domain/model";
+import { type Item, type Placement, placementError, canPlaceOnTop, productOf, resolveItems, dimensions, roomWallHeight, wallArtBounds, wallArtDepth, wallWidth } from "@/domain/model";
 import { tabletopDrop } from '@/engine/tabletop-drop';
-import { dragPlacement, initialPlacement } from "@/domain/drag";
-import { SCENE, renderRoom, unproject, project, type Hit } from "@/engine/isometric";
+import { centerWallPlacement, dragPlacement, initialPlacement } from "@/domain/drag";
+import { samePlacement } from "@/domain/placement-history";
+import { SCENE, renderRoom, unproject, unprojectWall, project, projectWall, wallSideAt, type Hit } from "@/engine/isometric";
 
 import { advanceMotion, canAnimate, type RoomMotion } from "@/domain/motion";
 import type { Appearance } from "@/domain/appearance";
@@ -52,7 +53,7 @@ type Props = {
   zoom: number;
   readOnly: boolean;
   disabled: boolean;
-  onDrop: (id: string, x: number, y: number, rotation: number, parentId:string|null, supportLevel:number) => Promise<boolean>;
+  onDrop: (id: string, placement: Placement) => Promise<boolean>;
   onDragMessage: (message: string) => void;
   onPlacementPreview: (placement:Placement) => void;
   onDeselect: () => void;
@@ -112,7 +113,7 @@ export default function RoomCanvas(props: Props) {
       scene.addChild(sprite);
       app.stage.addChild(scene);
       const hitContext = document.createElement("canvas").getContext("2d")!;
-      type Drag = { item: Item; pointer: number; start: readonly [number, number]; client: [number, number]; preview: Placement; grab:[number,number]; worldRotation:number; moved: boolean; saving: boolean; draftMode:boolean };
+      type Drag = { item: Item; pointer: number; start: readonly [number, number]; client: [number, number]; origin: Placement; preview: Placement; grab:[number,number]; worldRotation:number; moved: boolean; saving: boolean; draftMode:boolean };
       let drag: Drag | null = null, frame = 0;
       let light = latest.current.daylight;
       let accent = createLightTransition(latest.current.accentLights);
@@ -177,6 +178,19 @@ export default function RoomCanvas(props: Props) {
         return { x: ((e.clientX - rect.left) * app.screen.width / rect.width - scene.x) / scene.scale.x,
           y: ((e.clientY - rect.top) * app.screen.height / rect.height - scene.y) / scene.scale.y };
       };
+      const hitAt = (pt: { x: number; y: number }, pointerType: string) => {
+        const current = latest.current;
+        const candidates = [...(api.current?.hits ?? [])].reverse().filter(hit => !current.editing || hit.id === current.selected);
+        const exact = candidates.find(hit => hitContext.isPointInPath(hit.path, pt.x, pt.y));
+        if (exact) return exact;
+        const wallHits = candidates.filter(hit => hit.wall);
+        if (!wallHits.length) return;
+        // Keep the grab margin in screen pixels as the room zoom changes.
+        const radius = pointerType === 'touch' ? 14 : 9;
+        hitContext.lineWidth = 2 * radius * app.screen.width / (app.canvas.getBoundingClientRect().width * scene.scale.x);
+        hitContext.lineJoin = 'round';
+        return wallHits.find(hit => hitContext.isPointInStroke(hit.path, pt.x, pt.y));
+      };
       const paint = () => {
         const current = latest.current;
         syncResident();
@@ -213,7 +227,7 @@ export default function RoomCanvas(props: Props) {
         const current = latest.current;
         if (e.button !== 0 || !e.isPrimary || drag || current.disabled) return;
         const pt = point(e);
-        const hit = [...(api.current?.hits ?? [])].reverse().find(h => hitContext.isPointInPath(h.path, pt.x, pt.y));
+        const hit = hitAt(pt, e.pointerType);
         if (hit?.id.startsWith('skill-reward:')) {
           if(!current.interactionLocked)current.onReward?.(hit.id.slice('skill-reward:'.length));
           return;
@@ -231,14 +245,19 @@ export default function RoomCanvas(props: Props) {
           schedule(); syncMotion(); return;
         }
         if (current.interactionLocked) return;
-        if (hit && (!current.editing || hit.id===current.selected)) {
+        if (hit) {
           const saved = current.items.find(i => i.id === hit.id);
           const item = saved && {...saved,...(current.draft && saved.id===current.selected ? current.draft : initialPlacement(saved))};
           if (!current.readOnly && item && item.x !== null && item.y !== null) {
             const previewItems=current.items.map(i=>i.id===item.id?item:i);
-            const world=resolveItems(previewItems).find(i=>i.id===item.id)!,d=dimensions(productOf(world),world.rotation);
-            const center=project(world.x!+d.w/2,world.y!+d.h/2,world.elevation);
-            drag = { item, pointer: e.pointerId, start: unproject(pt.x, pt.y), client: [e.clientX, e.clientY], preview: { x: item.x, y: item.y, rotation: item.rotation, parentId:item.parentId??null, supportLevel:item.supportLevel??0 }, grab:[pt.x-center[0],pt.y-center[1]],worldRotation:world.rotation,moved: false, saving: false,draftMode:!!current.draft };
+            const world=resolveItems(previewItems).find(i=>i.id===item.id)!;
+            const product=productOf(world), d=dimensions(product,world.rotation);
+            const side=world.wallSide ?? 'right';
+            const center=product.surface === 'wall'
+              ? projectWall(side, world.x! + d.w / 2, world.elevation + wallArtBounds(product, side).height / 2, wallArtDepth)
+              : project(world.x!+d.w/2,world.y!+d.h/2,world.elevation);
+            const origin: Placement = { x: item.x, y: item.y, rotation: item.rotation, parentId:item.parentId??null, supportLevel:item.supportLevel??0, wallHeight:item.wallHeight, wallSide:item.wallSide };
+            drag = { item, pointer: e.pointerId, start: unproject(pt.x, pt.y), client: [e.clientX, e.clientY], origin, preview: origin, grab:[pt.x-center[0],pt.y-center[1]],worldRotation:world.rotation,moved: false, saving: false,draftMode:!!current.draft };
             syncMotion();
             app.canvas.setPointerCapture(e.pointerId);
             schedule();
@@ -246,36 +265,62 @@ export default function RoomCanvas(props: Props) {
           } else current.onSelect(hit.id);
           return;
         }
-        // Empty-space clicks never move a draft; placement starts on the object itself.
-        if (current.readOnly || current.editing) return;
+        if (current.readOnly) return;
         const [x, y] = unproject(pt.x, pt.y);
+        if (current.draft) {
+          const item = current.items.find(i => i.id === current.selected);
+          if (!item) return;
+          const product = productOf(item);
+          if (product.surface === 'wall') {
+            const side = wallSideAt(pt.x);
+            const [along, height] = unprojectWall(pt.x, pt.y, side);
+            if (along >= 0 && along <= wallWidth[side] && height >= 0 && height <= roomWallHeight) {
+              current.onPlacementPreview(centerWallPlacement(product, side, along, height));
+            }
+            return;
+          }
+          const parentRotation = current.items.find(i => i.id === current.draft?.parentId)?.rotation ?? 0;
+          const placement = tabletopDrop(current.items, item, pt.x, pt.y, (parentRotation + current.draft.rotation) % 360);
+          if (placement.parentId || (x >= 0 && x < 24 && y >= 0 && y < 16)) current.onPlacementPreview(placement);
+          return;
+        }
         if (x >= 0 && x < 24 && y >= 0 && y < 16) current.onDeselect();
       };
       const move = (e: PointerEvent) => {
         const pt = point(e);
         if (drag) {
           if (drag.pointer !== e.pointerId || drag.saving) return;
-          if (!drag.moved && Math.hypot(e.clientX - drag.client[0], e.clientY - drag.client[1]) < 5) return;
-          const preview:Placement = canPlaceOnTop(productOf(drag.item))
-            ? tabletopDrop(latest.current.items,drag.item,pt.x-drag.grab[0],pt.y-drag.grab[1],drag.worldRotation)
-            : {...dragPlacement(drag.item, drag.start, unproject(pt.x, pt.y), productOf(drag.item).surface === "wall"),parentId:null};
+          const product = productOf(drag.item);
+          const wall = product.surface === 'wall';
+          if (!drag.moved && Math.hypot(e.clientX - drag.client[0], e.clientY - drag.client[1]) < (wall ? 3 : 5)) return;
+          const grabX = pt.x - drag.grab[0], grabY = pt.y - drag.grab[1];
+          let preview: Placement;
+          if (wall) {
+            const side = wallSideAt(grabX);
+            preview = centerWallPlacement(product, side, ...unprojectWall(grabX, grabY, side, wallArtDepth));
+          } else {
+            preview = canPlaceOnTop(product)
+              ? tabletopDrop(latest.current.items,drag.item,grabX,grabY,drag.worldRotation,[pt.x,pt.y])
+              : {...dragPlacement(drag.item, drag.start, unproject(pt.x, pt.y)),parentId:null};
+          }
           preview.supportLevel=preview.supportLevel??0;
-          const changed = !drag.moved || preview.x !== drag.preview.x || preview.y !== drag.preview.y || preview.parentId!==drag.preview.parentId || preview.rotation!==drag.preview.rotation || preview.supportLevel!==drag.preview.supportLevel;
+          const changed = !drag.moved || !samePlacement(preview, drag.preview);
           drag.moved = true;
           syncMotion();
           drag.preview = preview;
           app.canvas.style.cursor = "grabbing";
           if (changed) schedule();
         } else {
-          const hit = api.current?.hits.some(h => hitContext.isPointInPath(h.path, pt.x, pt.y));
-          app.canvas.style.cursor = latest.current.disabled ? "wait" : latest.current.residentMode === 'direct' && !latest.current.readOnly && !latest.current.editing ? 'pointer' : hit ? latest.current.readOnly ? "pointer" : "grab" : "default";
+          const current = latest.current;
+          const hit = hitAt(pt, e.pointerType);
+          app.canvas.style.cursor = current.disabled ? "wait" : hit ? current.readOnly || hit.id.startsWith('skill-reward:') ? "pointer" : "grab" : current.editing ? 'crosshair' : current.residentMode === 'direct' && !current.readOnly ? 'pointer' : 'default';
         }
       };
       const up = async (e: PointerEvent) => {
         if (!drag || drag.pointer !== e.pointerId || drag.saving) return;
         move(e);
         const pending = drag;
-        const { x, y, rotation, parentId=null, supportLevel=0 } = pending.preview;
+        const { x, y, rotation, parentId=null, supportLevel=0, wallHeight, wallSide } = pending.preview;
         if(pending.draftMode) {
           const preview={...pending.preview};
           cancel();
@@ -287,13 +332,13 @@ export default function RoomCanvas(props: Props) {
         if (!pending.moved && !latest.current.editing && ['lamp','record'].includes(productOf(pending.item).kind)) {
           cancel(); latest.current.onInteract(pending.item.id); return;
         }
-        if (!pending.moved || (x === pending.item.x && y === pending.item.y && parentId===(pending.item.parentId??null) && rotation===pending.item.rotation && supportLevel===(pending.item.supportLevel??0))) { cancel(); latest.current.onSelect(pending.item.id); return; }
-        const invalid = placementError(latest.current.items, pending.item, x, y, rotation,parentId,supportLevel);
+        if (!pending.moved || samePlacement(pending.preview, pending.origin)) { cancel(); latest.current.onSelect(pending.item.id); return; }
+        const invalid = placementError(latest.current.items, pending.item, x, y, rotation,parentId,supportLevel,wallHeight,wallSide);
         if (invalid) { latest.current.onDragMessage(invalid); cancel(); latest.current.onSelect(pending.item.id); return; }
         pending.saving = true;
         release(e.pointerId);
         app.canvas.style.cursor = "wait";
-        try { await latest.current.onDrop(pending.item.id, x, y, rotation,parentId,supportLevel); }
+        try { await latest.current.onDrop(pending.item.id, pending.preview); }
         finally { if (!disposed) { drag = null; app.canvas.style.cursor = "grab"; latest.current.onSelect(pending.item.id); schedule(); syncMotion(); } }
       };
       const escape = (e: KeyboardEvent) => { if (e.key === "Escape" && drag && !drag.saving) { e.preventDefault(); e.stopPropagation(); cancel(); } };

@@ -4,6 +4,7 @@ import type { Item } from '@/domain/model';
 import { residentTargets, type ResidentAction, type ResidentMode } from '@/domain/resident';
 import './resident.css';
 import Select from './Select';
+import FloatingPanelHandle, { useFloatingPanel } from './FloatingPanelHandle';
 import { masteryNames, type SkillActivity, type SkillReward } from '@/domain/skill-growth';
 
 type Props = {
@@ -23,13 +24,15 @@ const activities = [
   { action: 'walk', label: 'Прогуляться', icon: Footprints },
 ] as const;
 export default function ResidentPanel(p: Props) {
+  const panel = useFloatingPanel<HTMLDetailsElement>();
   const status = p.mode === 'hidden' ? 'Житель скрыт' : p.disabled ? 'Ждёт, пока закончишь обустройство' :
     p.mode === 'paused' ? 'На паузе' : !p.motion ? `${p.status} · без анимации` : p.status;
-  return <details className="resident-panel resident-growth-panel" aria-label="Житель комнаты">
+  return <details ref={panel.ref} style={panel.style} data-dragging={panel.dragging} className="resident-panel resident-growth-panel floating-room-panel" aria-label="Житель комнаты">
     <summary className="resident-heading">
       <div className="resident-avatar" aria-hidden="true"><UserRound size={22} strokeWidth={1.75}/></div>
       <div className="resident-name"><strong>Житель комнаты</strong><span role="status" aria-live="polite">{status}</span></div>
       <span className="resident-expand">Занятия и внешность <ChevronDown size={16}/></span>
+      <FloatingPanelHandle label="Переместить окно жителя комнаты" handle={panel.handle} />
     </summary>
       <div className="resident-header-controls"><button className="button secondary" disabled={!p.styleReady} onClick={p.onStyle}><Shirt size={16} strokeWidth={1.75}/>Внешность</button>
       <Select aria-label="Поведение жителя" value={p.mode} onValueChange={value => p.onMode(value as ResidentMode)}

@@ -30,3 +30,19 @@ test('undo destination is rejected if another item now occupies it', () => {
   assert.ok(placementError([moved, obstacle], moved, 5, 5, 0));
   assert.equal(placementError([moved], moved, 5, 5, 0), null);
 });
+test('a height-only wall move is undoable and restores the old default height', () => {
+  const art: Item = { id: 'art', productId: 'art-sun', x: 5, y: 0, rotation: 0, on: false };
+  const after = { x: 5, y: 0, rotation: 0, wallHeight: 150.5 };
+  const record = moveRecord(art, after)!;
+  assert.equal(record.before.wallHeight, 120);
+  assert.equal(samePlacement(placedPosition({ ...art, ...after })!, record.after), true);
+  assert.equal(samePlacement(record.after, record.before), false);
+});
+test('undo distinguishes the two walls even at the same coordinates', () => {
+  const art: Item = { id: 'art', productId: 'art-sun', x: 5, y: 0, rotation: 0, on: false, wallHeight: 40 };
+  const after = { x: 5, y: 0, rotation: 0, wallHeight: 40, wallSide: 'left' as const };
+  const record = moveRecord(art, after)!;
+  assert.equal(record.before.wallSide, 'right');
+  assert.equal(record.after.wallSide, 'left');
+  assert.equal(samePlacement(placedPosition({ ...art, ...after })!, record.after), true);
+});

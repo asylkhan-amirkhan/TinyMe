@@ -199,10 +199,62 @@ export type Item = {
   /** Coordinates and rotation are local to the supporting furniture when set. */
   parentId?: string | null;
   supportLevel?: number;
+  /** Height of the bottom edge above the floor for wall-mounted items. */
+  wallHeight?: number;
+  /** Wall coordinates start at the shared inside corner. */
+  wallSide?: WallSide;
 };
-export type Placement = {x:number;y:number;rotation:number;parentId?:string|null;supportLevel?:number};
+export type WallSide = 'left' | 'right';
+export type Placement = {x:number;y:number;rotation:number;parentId?:string|null;supportLevel?:number;wallHeight?:number;wallSide?:WallSide};
+export const roomWallHeight = 245;
+export const wallArtDepth = .21;
+export const wallWidth = { left: 16, right: 24 } as const;
+export function wallArtBounds(product: Product, side: WallSide = 'right') {
+  const height = product.game ? 80 : 55;
+  return { height, defaultHeight: product.game ? 100 : 120, maxX: wallWidth[side] - product.w, maxHeight: roomWallHeight - height };
+}
+
+export function wallPlacement(product: Product, x: number, height?: number, side: WallSide = 'right'): Placement & { wallHeight: number; wallSide: WallSide } {
+  const wallSide = side === 'left' ? 'left' : 'right';
+  const bounds = wallArtBounds(product, wallSide);
+  return {
+    x: Math.max(0, Math.min(bounds.maxX, x)),
+    y: 0, rotation: 0, parentId: null, supportLevel: 0, wallSide,
+    wallHeight: height !== undefined && Number.isFinite(height) ? Math.max(0, Math.min(bounds.maxHeight, height)) : bounds.defaultHeight,
+  };
+}
+type WallObstacle = { x: number; z: number; right: number; top: number };
+// Projected clearances at the frame face, including the depth of shelves and curtains.
+const fixedWallObstacles: Record<WallSide, WallObstacle[]> = {
+  left: [
+    { x: 1.5, z: 110, right: 8.65, top: 175 }, // Lower bookshelf
+    { x: 1.5, z: 167, right: 8.65, top: 232 }, // Upper bookshelf
+    { x: 8.98, z: 154, right: 11, top: 220 }, // Clock
+    { x: 11.05, z: 91, right: 14.45, top: 173 }, // Built-in picture
+  ],
+  right: [{ x: 12.15, z: 17.5, right: 23.15, top: 223 }], // Window, sill and curtains
+};
+export function wallObstacles(items: Item[], itemId: string, side: WallSide): WallObstacle[] {
+  const obstacles = [...fixedWallObstacles[side]];
+  for (const other of items) {
+    if (other.id === itemId || other.x === null || other.y === null) continue;
+    const product = productOf(other);
+    if (product.surface !== 'wall') continue;
+    const mount = wallPlacement(product, other.x, other.wallHeight, other.wallSide);
+    if (mount.wallSide !== side && mount.x >= wallArtDepth) continue;
+    obstacles.push({
+      x: mount.wallSide === side ? mount.x : 0,
+      right: mount.wallSide === side ? mount.x + product.w : wallArtDepth,
+      z: mount.wallHeight,
+      top: mount.wallHeight + wallArtBounds(product, mount.wallSide).height,
+    });
+  }
+  return obstacles;
+}
+export const deskSurfaceHeight = 65;
 export function supportSurfaces(p:Product) {
   if(p.kind==='shelf')return [9,42,76,110].map((height,level)=>({level,height,w:p.w-1,h:1,offsetX:.5,offsetY:1,clearance:[29,30,30,Infinity][level],label:level===3?'Верх стеллажа':`Полка ${level+1} ${level===0?'· нижняя':level===2?'· верхняя':'· средняя'}`}));
+  if(p.kind==='desk')return [{level:0,height:deskSurfaceHeight,w:p.w,h:1,offsetX:0,offsetY:p.h-1,clearance:Infinity,label:'Передний край столешницы'}];
   const height=p.kind==='coffee-table'?31:p.kind==='dresser'?63:0;
   return height?[{level:0,height,w:p.w,h:p.h,offsetX:0,offsetY:0,clearance:Infinity,label:'Столешница'}]:[];
 }
@@ -212,7 +264,11 @@ export const decorHeight = (p:Product) => p.decorHeight ?? ({'vase-branches':72,
 export type WorldItem = Item & {elevation:number};
 export function resolveItems(items:Item[]):WorldItem[] {
   return items.map(item=>{
-    if(productOf(item).surface==='wall' && item.x!==null && item.y!==null)return {...item,x:Math.max(0,Math.min(24-productOf(item).w,item.x)),y:0,rotation:0,elevation:0};
+    const product = productOf(item);
+    if(product.surface==='wall' && item.x!==null && item.y!==null) {
+      const mount = wallPlacement(product, item.x, item.wallHeight, item.wallSide);
+      return {...item, ...mount, elevation: mount.wallHeight};
+    }
     if(!item.parentId)return {...item,elevation:0};
     const parent=items.find(p=>p.id===item.parentId);
     if(!parent||parent.parentId||parent.x===null||parent.y===null||item.x===null||item.y===null)return {...item,x:null,y:null,elevation:0};
@@ -298,10 +354,22 @@ export function placementError(
   rotation: number,
   parentId: string | null = item.parentId ?? null,
   supportLevel: number = item.supportLevel ?? 0,
+  wallHeight: number | undefined = item.wallHeight,
+  wallSide: WallSide = item.wallSide ?? 'right',
 ): string | null {
   const p = productOf(item);
+  if (p.surface === 'wall') {
+    if (rotation !== 0) return "Настенный предмет должен прилегать к стене";
+    if (y !== 0 || parentId || supportLevel !== 0 || (wallSide !== 'left' && wallSide !== 'right')) return "Выберите место на стене";
+    const bounds = wallArtBounds(p, wallSide);
+    const z = wallHeight ?? bounds.defaultHeight;
+    if (!Number.isFinite(x) || !Number.isFinite(z) || x < 0 || x > bounds.maxX || z < 0 || z > bounds.maxHeight)
+      return "Предмет выходит за границы стены";
+    const overlapping = wallObstacles(items, item.id, wallSide).some(obstacle =>
+      x < obstacle.right && obstacle.x < x + p.w && z < obstacle.top && obstacle.z < z + bounds.height);
+    return overlapping ? "Это место на стене уже занято" : null;
+  }
   const { w, h } = dimensions(p, rotation);
-  if(p.surface==='wall' && rotation!==0)return "Постер должен прилегать к стене — поворот недоступен";
   if (
     !Number.isInteger(x) ||
     !Number.isInteger(y) ||
@@ -310,15 +378,13 @@ export function placementError(
     return "Выберите клетку и допустимый поворот";
   const parent=parentId?items.find(i=>i.id===parentId):undefined;
   if(parentId && (!canPlaceOnTop(p)||!parent||parent.id===item.id||parent.parentId||parent.x===null||parent.y===null||!tabletopHeight(productOf(parent))))
-    return "Выберите столик, комод или стеллаж в комнате";
+    return "Выберите стол, комод или стеллаж в комнате";
   const surface=parent?supportSurfaces(productOf(parent))[supportLevel]:undefined;
   if(!Number.isInteger(supportLevel)||(!parent&&supportLevel!==0)||(parent&&!surface))return "Выберите допустимый ярус";
   if(surface&&decorHeight(p)>surface.clearance)return "Вещь слишком высокая для этого яруса. Выберите верх стеллажа";
   const bounds=surface??{w:24,h:16};
   if (x < 0 || y < 0 || x + w > bounds.w || y + h > bounds.h)
     return parent ? "Предмет не помещается на поверхности" : "Предмет выходит за границы комнаты";
-  if (p.surface === "wall" && y !== 0)
-    return "Картина размещается на верхней стене (Y = 0)";
   if (
     items.some((o) => {
       if (o.id === item.id || o.x === null || o.y === null) return false;
@@ -327,8 +393,7 @@ export function placementError(
       const q = productOf(o);
       if (q.surface !== p.surface) return false;
       const d = dimensions(q, o.rotation);
-      const ox=q.surface==='wall'?Math.max(0,Math.min(24-q.w,o.x)):o.x,oy=q.surface==='wall'?0:o.y;
-      return x < ox + d.w && x + w > ox && y < oy + d.h && y + h > oy;
+      return x < o.x + d.w && x + w > o.x && y < o.y + d.h && y + h > o.y;
     })
   )
     return "Здесь уже стоит другой предмет";

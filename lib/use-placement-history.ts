@@ -35,7 +35,7 @@ export function usePlacementHistory(items: Item[], scope: string, command: (kind
       return false;
     }
     const p = record.before;
-    const error = placementError(items, item, p.x, p.y, p.rotation, p.parentId, p.supportLevel);
+    const error = placementError(items, item, p.x, p.y, p.rotation, p.parentId, p.supportLevel, p.wallHeight, p.wallSide);
     if (error) { notice(error); return false; }
     locked.current = true;
     try {
