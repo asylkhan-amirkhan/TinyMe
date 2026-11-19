@@ -1,45 +1,29 @@
 {
-  "name": "myroom",
-  "version": "0.33.1",
+  "name": "tiny-me",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack --hostname 127.0.0.1",
-    "build": "next build --webpack",
-    "start": "next start --hostname 127.0.0.1",
-    "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "lint": "eslint",
-    "backend:start": "supabase start",
-    "backend:stop": "supabase stop",
-    "backend:functions": "supabase functions serve music-library",
-    "local:env": "node scripts/local-env.mjs",
-    "db:migrate": "supabase migration up --local",
-    "admin:grant": "node --env-file=.env.local scripts/set-admin.mjs",
-    "test:auth": "tsx --test tests/integration/auth.test.ts"
+    "test:shop": "node tests/shop-database.mjs"
   },
   "dependencies": {
-    "@fontsource-variable/inter": "5.3.0",
-    "@fontsource-variable/cormorant-garamond": "5.3.0",
-    "next": "16.4.3",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "pixi.js": "^8.14.0",
-    "lucide-react": "^0.468.0",
-    "@supabase/supabase-js": "^2.95.0",
-    "idb": "^8.0.3"
+    "@supabase/supabase-js": "^2.119.0",
+    "next": "16.4.2",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
-    "supabase": "2.121.0",
-    "@tailwindcss/postcss": "^4.3.3",
+    "@electric-sql/pglite": "^0.5.16",
     "@tailwindcss/turbopack": "^4",
-    "@types/node": "^24.0.0",
-    "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.4.3",
+    "eslint-config-next": "16.4.2",
     "tailwindcss": "^4",
-    "typescript": "^5.9.0",
-    "tsx": "^4.20.0"
-  },
-  "engines": { "node": ">=24" }
+    "typescript": "^5"
+  }
 }
